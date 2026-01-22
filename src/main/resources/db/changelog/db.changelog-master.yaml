@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-enable-pgcrypto
+      author: vasa
+      changes:
+        - sql:
+            splitStatements: false
+            sql: "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+
+  - include:
+      file: db/changelog/001-init-schema.yaml

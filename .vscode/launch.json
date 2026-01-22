@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run Spring Boot",
+      "request": "launch",
+      "mainClass": "cz.vh.lide.LideAppApplication",
+      "envFile": "${workspaceFolder}/run.env"
+    }
+  ]
+}

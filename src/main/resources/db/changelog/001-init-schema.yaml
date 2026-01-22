@@ -1,0 +1,603 @@
+databaseChangeLog:
+
+  # -----------------------------
+  # PERSON
+  # -----------------------------
+  - changeSet:
+      id: 010-create-person
+      author: venca
+      changes:
+        - createTable:
+            tableName: person
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: first_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_name
+                  type: varchar(100)
+              - column:
+                  name: nickname
+                  type: varchar(100)
+              - column:
+                  name: birth_date
+                  type: date
+              - column:
+                  name: phone
+                  type: varchar(50)
+              - column:
+                  name: email
+                  type: varchar(200)
+              - column:
+                  name: note
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamptz
+
+        - createIndex:
+            tableName: person
+            indexName: ix_person_last_first
+            columns:
+              - column:
+                  name: last_name
+              - column:
+                  name: first_name
+
+  # -----------------------------
+  # TAG
+  # -----------------------------
+  - changeSet:
+      id: 020-create-tag
+      author: venca
+      changes:
+        - createTable:
+            tableName: tag
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamptz
+
+        - addUniqueConstraint:
+            tableName: tag
+            columnNames: name
+            constraintName: uq_tag_name
+
+  # -----------------------------
+  # ENTRY
+  # -----------------------------
+  - changeSet:
+      id: 030-create-entry
+      author: venca
+      changes:
+        - createTable:
+            tableName: entry
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(200)
+              - column:
+                  name: content
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamptz
+
+        - createIndex:
+            tableName: entry
+            indexName: ix_entry_type
+            columns:
+              - column:
+                  name: type
+
+        - createIndex:
+            tableName: entry
+            indexName: ix_entry_occurred_at
+            columns:
+              - column:
+                  name: occurred_at
+
+  # -----------------------------
+  # MEDIA
+  # -----------------------------
+  - changeSet:
+      id: 040-create-media
+      author: venca
+      changes:
+        - createTable:
+            tableName: media
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: media_type
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mime_type
+                  type: varchar(120)
+              - column:
+                  name: uri
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(200)
+              - column:
+                  name: note
+                  type: text
+              - column:
+                  name: taken_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamptz
+
+        - createIndex:
+            tableName: media
+            indexName: ix_media_type
+            columns:
+              - column:
+                  name: media_type
+
+        - createIndex:
+            tableName: media
+            indexName: ix_media_taken_at
+            columns:
+              - column:
+                  name: taken_at
+
+  # -----------------------------
+  # PERSON_RELATION (person <-> person)
+  # -----------------------------
+  - changeSet:
+      id: 050-create-person-relation
+      author: venca
+      changes:
+        - createTable:
+            tableName: person_relation
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: from_person_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: to_person_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: text
+              - column:
+                  name: valid_from
+                  type: date
+              - column:
+                  name: valid_to
+                  type: date
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamptz
+
+        - addForeignKeyConstraint:
+            constraintName: fk_person_relation_from
+            baseTableName: person_relation
+            baseColumnNames: from_person_id
+            referencedTableName: person
+            referencedColumnNames: id
+
+        - addForeignKeyConstraint:
+            constraintName: fk_person_relation_to
+            baseTableName: person_relation
+            baseColumnNames: to_person_id
+            referencedTableName: person
+            referencedColumnNames: id
+
+        - sql:
+            splitStatements: false
+            sql: "ALTER TABLE person_relation ADD CONSTRAINT ck_person_relation_not_self CHECK (from_person_id <> to_person_id);"
+
+        - createIndex:
+            tableName: person_relation
+            indexName: ix_person_relation_from
+            columns:
+              - column:
+                  name: from_person_id
+
+        - createIndex:
+            tableName: person_relation
+            indexName: ix_person_relation_to
+            columns:
+              - column:
+                  name: to_person_id
+
+  # -----------------------------
+  # JOIN: PERSON_TAG
+  # -----------------------------
+  - changeSet:
+      id: 060-create-person-tag
+      author: venca
+      changes:
+        - createTable:
+            tableName: person_tag
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: person_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tag_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamptz
+
+        - addForeignKeyConstraint:
+            constraintName: fk_person_tag_person
+            baseTableName: person_tag
+            baseColumnNames: person_id
+            referencedTableName: person
+            referencedColumnNames: id
+
+        - addForeignKeyConstraint:
+            constraintName: fk_person_tag_tag
+            baseTableName: person_tag
+            baseColumnNames: tag_id
+            referencedTableName: tag
+            referencedColumnNames: id
+
+        - addUniqueConstraint:
+            tableName: person_tag
+            columnNames: person_id, tag_id
+            constraintName: uq_person_tag_person_tag
+
+        - createIndex:
+            tableName: person_tag
+            indexName: ix_person_tag_person
+            columns:
+              - column:
+                  name: person_id
+
+        - createIndex:
+            tableName: person_tag
+            indexName: ix_person_tag_tag
+            columns:
+              - column:
+                  name: tag_id
+
+  # -----------------------------
+  # JOIN: ENTRY_TAG
+  # -----------------------------
+  - changeSet:
+      id: 070-create-entry-tag
+      author: venca
+      changes:
+        - createTable:
+            tableName: entry_tag
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: entry_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tag_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamptz
+
+        - addForeignKeyConstraint:
+            constraintName: fk_entry_tag_entry
+            baseTableName: entry_tag
+            baseColumnNames: entry_id
+            referencedTableName: entry
+            referencedColumnNames: id
+
+        - addForeignKeyConstraint:
+            constraintName: fk_entry_tag_tag
+            baseTableName: entry_tag
+            baseColumnNames: tag_id
+            referencedTableName: tag
+            referencedColumnNames: id
+
+        - addUniqueConstraint:
+            tableName: entry_tag
+            columnNames: entry_id, tag_id
+            constraintName: uq_entry_tag_entry_tag
+
+        - createIndex:
+            tableName: entry_tag
+            indexName: ix_entry_tag_entry
+            columns:
+              - column:
+                  name: entry_id
+
+        - createIndex:
+            tableName: entry_tag
+            indexName: ix_entry_tag_tag
+            columns:
+              - column:
+                  name: tag_id
+
+  # -----------------------------
+  # JOIN: PERSON_ENTRY  (varianta A: role je součást "unikátní kombinace")
+  # Pozn.: role je NULL povolené -> v PG UNIQUE dovolí víc NULL řádků.
+  # Bez partial indexů je to OK pro MVP.
+  # -----------------------------
+  - changeSet:
+      id: 080-create-person-entry
+      author: venca
+      changes:
+        - createTable:
+            tableName: person_entry
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: person_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entry_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: varchar(50)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamptz
+
+        - addForeignKeyConstraint:
+            constraintName: fk_person_entry_person
+            baseTableName: person_entry
+            baseColumnNames: person_id
+            referencedTableName: person
+            referencedColumnNames: id
+
+        - addForeignKeyConstraint:
+            constraintName: fk_person_entry_entry
+            baseTableName: person_entry
+            baseColumnNames: entry_id
+            referencedTableName: entry
+            referencedColumnNames: id
+
+        - addUniqueConstraint:
+            tableName: person_entry
+            columnNames: person_id, entry_id, role
+            constraintName: uq_person_entry_person_entry_role
+
+        - createIndex:
+            tableName: person_entry
+            indexName: ix_person_entry_person
+            columns:
+              - column:
+                  name: person_id
+
+        - createIndex:
+            tableName: person_entry
+            indexName: ix_person_entry_entry
+            columns:
+              - column:
+                  name: entry_id
+
+  # -----------------------------
+  # JOIN: MEDIA_ENTRY
+  # -----------------------------
+  - changeSet:
+      id: 090-create-media-entry
+      author: venca
+      changes:
+        - createTable:
+            tableName: media_entry
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: media_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entry_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: caption
+                  type: varchar(300)
+              - column:
+                  name: sort_order
+                  type: int
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: timestamptz
+
+        - addForeignKeyConstraint:
+            constraintName: fk_media_entry_media
+            baseTableName: media_entry
+            baseColumnNames: media_id
+            referencedTableName: media
+            referencedColumnNames: id
+
+        - addForeignKeyConstraint:
+            constraintName: fk_media_entry_entry
+            baseTableName: media_entry
+            baseColumnNames: entry_id
+            referencedTableName: entry
+            referencedColumnNames: id
+
+        - addUniqueConstraint:
+            tableName: media_entry
+            columnNames: media_id, entry_id
+            constraintName: uq_media_entry_media_entry
+
+        - createIndex:
+            tableName: media_entry
+            indexName: ix_media_entry_media
+            columns:
+              - column:
+                  name: media_id
+
+        - createIndex:
+            tableName: media_entry
+            indexName: ix_media_entry_entry
+            columns:
+              - column:
+                  name: entry_id
