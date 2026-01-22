@@ -3,7 +3,9 @@
 ## Project Overview
 Lide is a personal database application for managing people, their relationships, entries (memories/stories), media files, and tags. Built with Spring Boot backend and Vite/React frontend.
 
-**📋 Pro podrobný popis struktury projektu viz: [guidelines-structure-project.md](guidelines-structure-project.md)**
+**📋 For detailed project structure description see: [guidelines-structure-project.md](guidelines-structure-project.md)**
+
+**🚧 For development roadmap and MVP requirements see: [TODO.md](TODO.md)**
 
 ## Core Principles
 
