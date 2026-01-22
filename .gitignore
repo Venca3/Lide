@@ -9,3 +9,8 @@
 # local env with secrets
 run.env
 .env
+
+# frontend build artifacts
+frontend/node_modules
+frontend/dist
+frontend/.vite
