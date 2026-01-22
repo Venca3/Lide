@@ -131,8 +131,7 @@ public class PersonEntryController {
 
   // remove link (soft delete) - role musí odpovídat stejné kombinaci jako při add
   @DeleteMapping("/person/{personId}/entries/{entryId}")
-  public ResponseEntity<?> remove(
-      @PathVariable UUID personId,
+  public ResponseEntity<?> remove(@PathVariable UUID personId,
       @PathVariable UUID entryId,
       @RequestParam(required = false) String role) {
     personRepo.findByIdAndDeletedAtIsNull(personId)
@@ -154,10 +153,7 @@ public class PersonEntryController {
     return ResponseEntity.noContent().build();
   }
 
-  private String normalizeRole(String role) {
-    if (role == null)
-      return null;
-    var r = role.trim();
-    return r.isEmpty() ? null : r;
+  private static String normalizeRole(String role) {
+    return (role == null || role.isBlank()) ? "DEFAULT" : role.trim();
   }
 }

@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-person-entry-role-not-null
+      author: venca
+      changes:
+        # 1) nastav default
+        - addDefaultValue:
+            tableName: person_entry
+            columnName: role
+            defaultValue: DEFAULT
+
+        # 2) doplň existující NULL role
+        - update:
+            tableName: person_entry
+            columns:
+              - column:
+                  name: role
+                  value: DEFAULT
+            where: role IS NULL
+
+        # 3) nastav NOT NULL
+        - addNotNullConstraint:
+            tableName: person_entry
+            columnName: role
+            columnDataType: varchar(50)

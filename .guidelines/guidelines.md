@@ -93,6 +93,13 @@ cz.vh.lide/
 
 ### Frontend Guidelines
 
+#### TypeScript Configuration
+- Uses composite project setup with project references
+- `tsconfig.json` - root configuration with path aliases (`@/*`)
+- `tsconfig.app.json` - app configuration with `"composite": true`
+- `tsconfig.node.json` - Vite configuration with `"composite": true`
+- Referenced projects must not disable emit (no `"noEmit": true`)
+
 #### Component Structure
 - Keep components focused and reusable
 - Use TypeScript for type safety
