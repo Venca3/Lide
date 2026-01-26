@@ -1,14 +1,43 @@
-import { apiGet } from "./http";
+import { apiDelete, apiGet, apiPostJson, apiPutJson } from "./http";
 
-export type EntrySearchItem = {
+export type EntryDto = {
   id: string;
   type: string;
-  title: string;
+  title: string | null;
+  content: string;
+  occurredAt: string | null;
+};
+
+export type EntryCreate = {
+  type: string;
+  title?: string | null;
+  content: string;
+  occurredAt?: string | null;
+};
+
+export type EntryUpdate = {
+  type?: string | null;
+  title?: string | null;
   content?: string | null;
   occurredAt?: string | null;
 };
 
-export function getEntries(q?: string) {
-  const qs = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
-  return apiGet<EntrySearchItem[]>(`/api/entries${qs}`);
+export function listEntries() {
+  return apiGet<EntryDto[]>("/api/entries");
+}
+
+export function getEntry(id: string) {
+  return apiGet<EntryDto>(`/api/entries/${id}`);
+}
+
+export function createEntry(body: EntryCreate) {
+  return apiPostJson<EntryDto>("/api/entries", body);
+}
+
+export function updateEntry(id: string, body: EntryUpdate) {
+  return apiPutJson<EntryDto>(`/api/entries/${id}`, body);
+}
+
+export function deleteEntry(id: string) {
+  return apiDelete(`/api/entries/${id}`);
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { getEntries } from "@/api/entries";
+import { listEntries } from "@/api/entries";
 import { addEntryToPerson } from "@/api/personEntries";
 
 type Props = {
@@ -26,19 +26,14 @@ export function AddEntryDialog({ personId, existingPairs, disabled }: Props) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState("");
   const [role, setRole] = useState("autor");
 
-  useMemo(() => {
-    const t = setTimeout(() => setDebouncedQ(q), 250);
-    return () => clearTimeout(t);
-  }, [q]);
-
   const entriesQuery = useQuery({
-    queryKey: ["entries", debouncedQ],
-    queryFn: () => getEntries(debouncedQ),
+    queryKey: ["entries"],          // q nepotřebuje key
+    queryFn: () => listEntries(),
     enabled: open,
   });
+
 
   const addMut = useMutation({
     mutationFn: (entryId: string) => addEntryToPerson(personId, entryId, role),
@@ -46,7 +41,6 @@ export function AddEntryDialog({ personId, existingPairs, disabled }: Props) {
       await qc.invalidateQueries({ queryKey: ["personread", personId] });
       setOpen(false);
       setQ("");
-      setDebouncedQ("");
       setRole("autor");
     },
   });
@@ -56,8 +50,21 @@ export function AddEntryDialog({ personId, existingPairs, disabled }: Props) {
   );
 
   const roleKey = (role ?? "").trim();
-  const filtered = (entriesQuery.data ?? []).filter(e => !existing.has(`${e.id}::${roleKey}`));
 
+  const qKey = q.trim().toLowerCase();
+
+  const searched = (entriesQuery.data ?? []).filter((e) => {
+    if (!qKey) return true;
+    return (
+      e.type.toLowerCase().includes(qKey) ||
+      (e.title ?? "").toLowerCase().includes(qKey) ||
+      (e.content ?? "").toLowerCase().includes(qKey)
+    );
+  });
+
+  const filtered = searched.filter(
+    (e) => !existing.has(`${e.id}::${roleKey}`)
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

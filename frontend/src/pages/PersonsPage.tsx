@@ -5,22 +5,34 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import { getPersons } from "@/api/persons";
+import { listPersons } from "@/api/persons";
 
 export function PersonsPage() {
   const [q, setQ] = useState("");
-
-  // malý debounce bez knihovny (krátký krok)
   const [debouncedQ, setDebouncedQ] = useState("");
+
   useMemo(() => {
     const t = setTimeout(() => setDebouncedQ(q), 300);
     return () => clearTimeout(t);
   }, [q]);
 
   const personsQuery = useQuery({
-    queryKey: ["persons", debouncedQ],
-    queryFn: () => getPersons(debouncedQ),
+    queryKey: ["persons"],
+    queryFn: () => listPersons(),
   });
+
+  const qKey = debouncedQ.trim().toLowerCase();
+  const filtered = (personsQuery.data ?? []).filter((p) => {
+    if (!qKey) return true;
+    const hay = [p.nickname, p.firstName, p.lastName, p.email, p.phone]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(qKey);
+  });
+
+  const display = (p: any) =>
+    p.nickname ?? ([p.firstName, p.lastName].filter(Boolean).join(" ") || "Person");
 
   return (
     <div className="space-y-4">
@@ -48,14 +60,17 @@ export function PersonsPage() {
 
           {personsQuery.data && (
             <div className="space-y-2">
-              {personsQuery.data.map((p) => (
+              {filtered.map((p) => (
                 <div key={p.id} className="flex items-center justify-between">
-                  <div>{p.nickname}</div>
+                  <div>{display(p)}</div>
                   <Link className="text-sm underline" to={`/persons/${p.id}`}>
                     Detail
                   </Link>
                 </div>
               ))}
+              {filtered.length === 0 && (
+                <div className="text-sm text-muted-foreground">Nic nenalezeno</div>
+              )}
             </div>
           )}
         </CardContent>
