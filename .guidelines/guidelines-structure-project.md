@@ -233,6 +233,17 @@ Constraints (typicky):
 - `PersonRelationRepository.java`
 - `TagRepository.java`
 
+#### `cz.vh.lide.repo.crud` (CRUD ports + legacy adapters)
+- `*CrudStore.java` (write-side port; create/update/softDelete/getByUUID)
+- `Legacy*CrudStore.java` (adapter delegující na `cz.vh.lide.repo.*Repository`)
+
+#### `cz.vh.lide.repo.view` (View/read ports + legacy adapters)
+- `*ViewStore.java` (read-side port; list/get + další read dotazy)
+- `Legacy*ViewStore.java` (adapter delegující na `cz.vh.lide.repo.*Repository`)
+
+#### `cz.vh.lide.repo.projection` (projekce pro read)
+- interface-based projekce pro Spring Data (bez vlastních Spring beanů)
+
 #### `cz.vh.lide.api.dto` (DTOs)
 - `EntryDtos.java`
 - `EntryDetailDtos.java`

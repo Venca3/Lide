@@ -3,10 +3,17 @@ package cz.vh.lide.domain;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "person_entry", uniqueConstraints = @UniqueConstraint(name = "uq_person_entry_person_entry_role", columnNames = {
     "person_id", "entry_id", "role" }))
+@Getter
+@Setter
+@NoArgsConstructor
 public class PersonEntry {
 
   @Id
@@ -23,6 +30,7 @@ public class PersonEntry {
   private String role; // může být null
 
   @Column(name = "created_at", nullable = false)
+  @Setter(AccessLevel.NONE)
   private Instant createdAt;
 
   @Column(name = "deleted_at")
@@ -31,49 +39,5 @@ public class PersonEntry {
   @PrePersist
   void prePersist() {
     createdAt = Instant.now();
-  }
-
-  public UUID getId() {
-    return id;
-  }
-
-  public void setId(UUID id) {
-    this.id = id;
-  }
-
-  public UUID getPersonId() {
-    return personId;
-  }
-
-  public void setPersonId(UUID personId) {
-    this.personId = personId;
-  }
-
-  public UUID getEntryId() {
-    return entryId;
-  }
-
-  public void setEntryId(UUID entryId) {
-    this.entryId = entryId;
-  }
-
-  public String getRole() {
-    return role;
-  }
-
-  public void setRole(String role) {
-    this.role = role;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public Instant getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(Instant deletedAt) {
-    this.deletedAt = deletedAt;
   }
 }

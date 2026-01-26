@@ -4,9 +4,16 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "person_relation")
+@Getter
+@Setter
+@NoArgsConstructor
 public class PersonRelation {
 
   @Id
@@ -32,6 +39,7 @@ public class PersonRelation {
   private LocalDate validTo;
 
   @Column(name = "created_at", nullable = false)
+  @Setter(AccessLevel.NONE)
   private Instant createdAt;
 
   @Column(name = "deleted_at")
@@ -40,73 +48,5 @@ public class PersonRelation {
   @PrePersist
   void prePersist() {
     createdAt = Instant.now();
-  }
-
-  public UUID getId() {
-    return id;
-  }
-
-  public void setId(UUID id) {
-    this.id = id;
-  }
-
-  public UUID getFromPersonId() {
-    return fromPersonId;
-  }
-
-  public void setFromPersonId(UUID fromPersonId) {
-    this.fromPersonId = fromPersonId;
-  }
-
-  public UUID getToPersonId() {
-    return toPersonId;
-  }
-
-  public void setToPersonId(UUID toPersonId) {
-    this.toPersonId = toPersonId;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(String type) {
-    this.type = type;
-  }
-
-  public String getNote() {
-    return note;
-  }
-
-  public void setNote(String note) {
-    this.note = note;
-  }
-
-  public LocalDate getValidFrom() {
-    return validFrom;
-  }
-
-  public void setValidFrom(LocalDate validFrom) {
-    this.validFrom = validFrom;
-  }
-
-  public LocalDate getValidTo() {
-    return validTo;
-  }
-
-  public void setValidTo(LocalDate validTo) {
-    this.validTo = validTo;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public Instant getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(Instant deletedAt) {
-    this.deletedAt = deletedAt;
   }
 }

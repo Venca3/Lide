@@ -3,10 +3,17 @@ package cz.vh.lide.domain;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "person_tag", uniqueConstraints = @UniqueConstraint(name = "uq_person_tag_person_tag", columnNames = {
     "person_id", "tag_id" }))
+@Getter
+@Setter
+@NoArgsConstructor
 public class PersonTag {
 
   @Id
@@ -20,6 +27,7 @@ public class PersonTag {
   private UUID tagId;
 
   @Column(name = "created_at", nullable = false)
+  @Setter(AccessLevel.NONE)
   private Instant createdAt;
 
   @Column(name = "deleted_at")
@@ -28,42 +36,5 @@ public class PersonTag {
   @PrePersist
   void prePersist() {
     createdAt = Instant.now();
-  }
-
-  // getters/setters
-  public UUID getId() {
-    return id;
-  }
-
-  public void setId(UUID id) {
-    this.id = id;
-  }
-
-  public UUID getPersonId() {
-    return personId;
-  }
-
-  public void setPersonId(UUID personId) {
-    this.personId = personId;
-  }
-
-  public UUID getTagId() {
-    return tagId;
-  }
-
-  public void setTagId(UUID tagId) {
-    this.tagId = tagId;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public Instant getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(Instant deletedAt) {
-    this.deletedAt = deletedAt;
   }
 }

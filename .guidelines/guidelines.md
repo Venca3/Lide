@@ -27,7 +27,10 @@ Lide is a personal database application for managing people, their relationships
 ```
 cz.vh.lide/
 ├── domain/          # JPA entities
-├── repo/            # Spring Data repositories  
+├── repo/            # Legacy Spring Data repositories (JpaRepository)
+├── repo/crud/       # CRUD ports + legacy adapters (write-side)
+├── repo/view/       # View/read ports + legacy adapters (read-side)
+├── repo/projection/ # Read projections (no Spring beans)
 ├── api/dto/         # Data Transfer Objects
 └── api/             # REST controllers
 ```
@@ -131,6 +134,12 @@ cz.vh.lide/
 - Sanitize file uploads if implemented
 
 ## Common Patterns
+
+### Repository Layering (Legacy vs new Stores)
+- `cz.vh.lide.repo.*Repository` stays as **legacy Spring Data** repositories.
+- New code should depend on `cz.vh.lide.repo.crud.*CrudStore` (write) and `cz.vh.lide.repo.view.*ViewStore` (read).
+- Reason: we can introduce better separation (CRUD vs view) without moving existing code; migration can be done incrementally later.
+- Avoid creating a second `JpaRepository` interface for the same entity (it can cause bean name collisions / ambiguous wiring).
 
 ### Repository Queries
 Always filter soft deleted records:

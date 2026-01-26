@@ -3,9 +3,16 @@ package cz.vh.lide.domain;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "entry")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Entry {
 
   @Id
@@ -25,9 +32,11 @@ public class Entry {
   private Instant occurredAt;
 
   @Column(name = "created_at", nullable = false)
+  @Setter(AccessLevel.NONE)
   private Instant createdAt;
 
   @Column(name = "updated_at", nullable = false)
+  @Setter(AccessLevel.NONE)
   private Instant updatedAt;
 
   @Column(name = "deleted_at")
@@ -43,62 +52,5 @@ public class Entry {
   @PreUpdate
   void preUpdate() {
     updatedAt = Instant.now();
-  }
-
-  // getters/setters
-  public UUID getId() {
-    return id;
-  }
-
-  public void setId(UUID id) {
-    this.id = id;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(String type) {
-    this.type = type;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public String getContent() {
-    return content;
-  }
-
-  public void setContent(String content) {
-    this.content = content;
-  }
-
-  public Instant getOccurredAt() {
-    return occurredAt;
-  }
-
-  public void setOccurredAt(Instant occurredAt) {
-    this.occurredAt = occurredAt;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public Instant getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(Instant deletedAt) {
-    this.deletedAt = deletedAt;
   }
 }

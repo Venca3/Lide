@@ -91,6 +91,11 @@
 ### Backend – architektura
 - [ ] **Service layer** (ať controller není „repo orchestration“)
   - [ ] PersonService, EntryService, MediaService…
+- [ ] **Repository layering: CRUD vs View (zero-migration)**
+  - [ ] přidat `repo.crud/*CrudStore` + `Legacy*CrudStore` (delegace na stávající Spring Data repo)
+  - [ ] přidat `repo.view/*ViewStore` + `Legacy*ViewStore`
+  - [ ] postupně migrovat controllery z `cz.vh.lide.repo.*Repository` na nové `*Store` (po jednotlivých controller/feature)
+  - [ ] až po migraci zvážit úklid/rozpad legacy repo balíčku (nepovinné)
 - [ ] **DTO mapování**
   - [ ] MapStruct (pokud začne narůstat DTO logika)
 - [ ] **Audit**
