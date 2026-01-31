@@ -83,7 +83,7 @@ public class PersonEntryController {
       throw new IllegalArgumentException("Role is required");
     }
 
-    var existing = personEntryRepository.findByPersonIdAndEntryId(pId, eId, roleValue);
+    var existing = personEntryRepository.findByPersonIdAndEntryIdAndRole(pId, eId, roleValue);
     if (existing.isPresent()) {
       var link = existing.get();
       if (link.getDeletedAt() != null) {
@@ -118,7 +118,7 @@ public class PersonEntryController {
       throw new IllegalArgumentException("Role is required");
     }
 
-    var link = personEntryRepository.findByPersonIdAndEntryId(pId, eId, roleValue)
+    var link = personEntryRepository.findByPersonIdAndEntryIdAndRole(pId, eId, roleValue)
         .orElseThrow(() -> new IllegalArgumentException("PersonEntry link not found"));
     personEntryRepository.softDelete(java.util.Objects.requireNonNull(link.getId(), "link id"));
 

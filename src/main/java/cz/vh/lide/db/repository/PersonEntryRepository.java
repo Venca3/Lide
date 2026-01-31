@@ -26,7 +26,7 @@ public interface PersonEntryRepository extends JpaRepository<PersonEntry, UUID>,
    * Find PersonEntry by Person id and Entry id and role.
    */
   @NonNull
-  Optional<PersonEntry> findByPersonIdAndEntryId(@NonNull UUID personId, @NonNull UUID entryId, @NonNull String role);
+  Optional<PersonEntry> findByPersonIdAndEntryIdAndRole(@NonNull UUID personId, @NonNull UUID entryId, @NonNull String role);
 
   /**
    * Find all PersonEntries by Person id and Entry id.

@@ -72,6 +72,7 @@ public class PersonRelationService {
    * @return page of relation DTOs
    */
   @NonNull
+  @Transactional(readOnly = true)
   public Page<PersonRelationDto> list(@NonNull Pageable pageable, PersonRelationFilter filter) {
     var spec = Objects.requireNonNull(PersonRelationSpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)

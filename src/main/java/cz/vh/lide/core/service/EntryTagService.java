@@ -72,6 +72,7 @@ public class EntryTagService {
    * @return page of entry-tag DTOs
    */
   @NonNull
+  @Transactional(readOnly = true)
   public Page<EntryTagDto> list(@NonNull Pageable pageable, EntryTagFilter filter) {
     var spec = Objects.requireNonNull(EntryTagSpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)

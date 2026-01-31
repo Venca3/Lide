@@ -1,0 +1,99 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 003-001-add-updated-at-to-tag
+      author: assistant
+      changes:
+        - addColumn:
+            tableName: tag
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-002-add-updated-at-to-media
+      author: assistant
+      changes:
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-003-add-updated-at-to-entry_tag
+      author: assistant
+      changes:
+        - addColumn:
+            tableName: entry_tag
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-004-add-updated-at-to-person_tag
+      author: assistant
+      changes:
+        - addColumn:
+            tableName: person_tag
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-005-add-updated-at-to-person_entry
+      author: assistant
+      changes:
+        - addColumn:
+            tableName: person_entry
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-006-add-updated-at-to-media_entry
+      author: assistant
+      changes:
+        - addColumn:
+            tableName: media_entry
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-007-add-updated-at-to-person_relation
+      author: assistant
+      changes:
+        - addColumn:
+            tableName: person_relation
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false

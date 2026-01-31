@@ -72,6 +72,7 @@ public class MediaEntryService {
    * @return page of media-entry DTOs
    */
   @NonNull
+  @Transactional(readOnly = true)
   public Page<MediaEntryDto> list(@NonNull Pageable pageable, MediaEntryFilter filter) {
     var spec = Objects.requireNonNull(MediaEntrySpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)

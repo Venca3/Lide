@@ -72,6 +72,7 @@ public class PersonTagService {
    * @return page of person-tag DTOs
    */
   @NonNull
+  @Transactional(readOnly = true)
   public Page<PersonTagDto> list(@NonNull Pageable pageable, PersonTagFilter filter) {
     var spec = Objects.requireNonNull(PersonTagSpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)

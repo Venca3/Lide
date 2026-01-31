@@ -139,6 +139,7 @@ public class EntryService {
    * @return list of entries.
    */
   @NonNull
+  @Transactional(readOnly = true)
   public List<EntryDto> listNotDeleted() {
     Pageable pageable = Pageable.unpaged();
     var entities = repository.findByDeletedAtIsNull(pageable);
@@ -156,6 +157,7 @@ public class EntryService {
    * @return page of entry DTOs
    */
   @NonNull
+  @Transactional(readOnly = true)
   public Page<EntryDto> list(@NonNull Pageable pageable, EntryFilter filter) {
     var spec = Objects.requireNonNull(EntrySpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)

@@ -126,6 +126,7 @@ public class TagService {
    * @return page of tag DTOs
    */
   @NonNull
+  @Transactional(readOnly = true)
   public Page<TagDto> list(@NonNull Pageable pageable, TagFilter filter) {
     var spec = Objects.requireNonNull(TagSpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)

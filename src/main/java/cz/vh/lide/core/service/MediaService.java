@@ -114,6 +114,7 @@ public class MediaService {
    * @return page of media DTOs
    */
   @NonNull
+  @Transactional(readOnly = true)
   public Page<MediaDto> list(@NonNull Pageable pageable, MediaFilter filter) {
     var spec = Objects.requireNonNull(MediaSpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)
