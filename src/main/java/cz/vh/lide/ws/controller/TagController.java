@@ -37,7 +37,7 @@ public class TagController {
   }
 
   @GetMapping(params = {"q", "page", "size"})
-  public ResponseEntity<org.springframework.data.domain.Page<TagView>> list(
+  public ResponseEntity<List<TagView>> list(
       @RequestParam(required = false) String q,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
@@ -49,7 +49,24 @@ public class TagController {
           .build();
     }
     var pageRes = tagService.list(pageable, filter).map(WsMapper::toTagView);
-    return ResponseEntity.ok(pageRes);
+    long total = pageRes.getTotalElements();
+    int number = pageRes.getNumber();
+    int totalPages = pageRes.getTotalPages();
+    var headers = new org.springframework.http.HttpHeaders();
+    headers.add("X-Total-Count", String.valueOf(total));
+    StringBuilder link = new StringBuilder();
+    var base = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentRequest();
+    if (number + 1 < totalPages) {
+      var nextUri = base.replaceQueryParam("page", number + 1).replaceQueryParam("size", size).toUriString();
+      link.append("<").append(nextUri).append(">; rel=\"next\"");
+    }
+    if (number > 0) {
+      if (link.length() > 0) link.append(", ");
+      var prevUri = base.replaceQueryParam("page", number - 1).replaceQueryParam("size", size).toUriString();
+      link.append("<").append(prevUri).append(">; rel=\"prev\"");
+    }
+    if (link.length() > 0) headers.add("Link", link.toString());
+    return ResponseEntity.ok().headers(headers).body(pageRes.getContent());
   }
 
   @GetMapping("/{id}")
