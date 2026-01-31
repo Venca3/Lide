@@ -1,0 +1,61 @@
+package cz.vh.lide.ws.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import cz.vh.lide.core.service.EntryService;
+import cz.vh.lide.ws.dto.EntryDtos.EntryCreate;
+import cz.vh.lide.ws.dto.EntryDtos.EntryUpdate;
+import cz.vh.lide.ws.dto.EntryDtos.EntryView;
+import cz.vh.lide.ws.mapper.WsMapper;
+
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/entries")
+public class EntryController {
+
+  private final EntryService entryService;
+
+  public EntryController(EntryService entryService) {
+    this.entryService = entryService;
+  }
+
+  @GetMapping
+  public ResponseEntity<List<EntryView>> list() {
+    var items = entryService.listNotDeleted().stream()
+        .map(WsMapper::toEntryView)
+        .toList();
+    return ResponseEntity.ok(items);
+  }
+
+  @GetMapping("/{id}")
+  public ResponseEntity<EntryView> get(@PathVariable UUID id) {
+    return ResponseEntity.ok(WsMapper.toEntryView(entryService.get(id)));
+  }
+
+  @PostMapping
+  public ResponseEntity<EntryView> create(@RequestBody EntryCreate req) {
+    var created = entryService.create(WsMapper.toEntryDto(req));
+    var location = URI.create("/api/entries/" + created.getId());
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .header(HttpHeaders.LOCATION, location.toString())
+      .body(WsMapper.toEntryView(created));
+  }
+
+  @PutMapping("/{id}")
+  public ResponseEntity<EntryView> update(@PathVariable UUID id, @RequestBody EntryUpdate req) {
+    var updated = entryService.update(id, WsMapper.toEntryDto(req));
+    return ResponseEntity.ok(WsMapper.toEntryView(updated));
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
+    entryService.softDelete(id);
+    return ResponseEntity.noContent().build();
+  }
+}
