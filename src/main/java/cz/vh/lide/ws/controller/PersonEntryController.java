@@ -9,6 +9,8 @@ import cz.vh.lide.ws.dto.PersonEntryDtos.PersonWithRole;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -72,6 +74,7 @@ public class PersonEntryController {
 
   // add link (role je query param; prázdné = null)
   @PostMapping("/person/{personId}/entries/{entryId}")
+  @Operation(summary = "Add person-entry link", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> add(
       @PathVariable UUID personId,
       @PathVariable UUID entryId,
@@ -108,6 +111,7 @@ public class PersonEntryController {
 
   // remove link (soft delete) - role musí odpovídat stejné kombinaci jako při add
   @DeleteMapping("/person/{personId}/entries/{entryId}")
+  @Operation(summary = "Remove person-entry link", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> remove(@PathVariable UUID personId,
       @PathVariable UUID entryId,
       @RequestParam(required = false) String role) {

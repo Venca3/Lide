@@ -11,6 +11,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import java.net.URI;
 import java.util.List;
@@ -72,6 +74,7 @@ public class PersonRelationController {
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Soft delete person relation", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
     personRelationService.softDelete(id);
     return ResponseEntity.noContent().build();

@@ -10,6 +10,8 @@ import cz.vh.lide.ws.dto.MediaEntryDtos.MediaWithLink;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -76,6 +78,7 @@ public class MediaEntryController {
 
   // ADD (a když existuje, tak updatuj caption/sortOrder + undelete)
   @PostMapping("/entry/{entryId}/media/{mediaId}")
+  @Operation(summary = "Add entry-media link", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> add(
       @PathVariable UUID entryId,
       @PathVariable UUID mediaId,
@@ -84,7 +87,6 @@ public class MediaEntryController {
     var mId = java.util.Objects.requireNonNull(mediaId, "mediaId");
     var caption = req != null ? req.caption() : null;
     var sortOrder = req != null ? req.sortOrder() : null;
-
     var existing = mediaEntryRepository.findByEntryIdAndMediaId(eId, mId);
     if (existing.isPresent()) {
       var link = existing.get();
@@ -113,6 +115,7 @@ public class MediaEntryController {
 
   // UPDATE vazby (jen caption/sortOrder)
   @PutMapping("/entry/{entryId}/media/{mediaId}")
+  @Operation(summary = "Update entry-media link", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> update(
       @PathVariable UUID entryId,
       @PathVariable UUID mediaId,
@@ -129,6 +132,7 @@ public class MediaEntryController {
 
   // REMOVE (soft delete)
   @DeleteMapping("/entry/{entryId}/media/{mediaId}")
+  @Operation(summary = "Remove entry-media link", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> remove(@PathVariable UUID entryId, @PathVariable UUID mediaId) {
     var eId = java.util.Objects.requireNonNull(entryId, "entryId");
     var mId = java.util.Objects.requireNonNull(mediaId, "mediaId");

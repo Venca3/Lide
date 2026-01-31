@@ -9,6 +9,8 @@ import cz.vh.lide.ws.dto.TagDtos.TagView;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -63,6 +65,7 @@ public class EntryTagController {
 
   // add tag to entry (undelete if exists)
   @PostMapping("/entry/{entryId}/tag/{tagId}")
+  @Operation(summary = "Add tag to entry", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> add(@PathVariable UUID entryId, @PathVariable UUID tagId) {
     var eId = java.util.Objects.requireNonNull(entryId, "entryId");
     var tId = java.util.Objects.requireNonNull(tagId, "tagId");
@@ -92,6 +95,7 @@ public class EntryTagController {
 
   // remove tag from entry (soft delete)
   @DeleteMapping("/entry/{entryId}/tag/{tagId}")
+  @Operation(summary = "Remove tag from entry", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> remove(@PathVariable UUID entryId, @PathVariable UUID tagId) {
     var eId = java.util.Objects.requireNonNull(entryId, "entryId");
     var tId = java.util.Objects.requireNonNull(tagId, "tagId");

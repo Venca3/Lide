@@ -1,6 +1,7 @@
 package cz.vh.lide.ws.dto;
 
 import java.time.Instant;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,12 +14,12 @@ public final class MediaDtos {
       String title, String note, Instant takenAt) {
   }
 
-  public record MediaCreate(String mediaType, String mimeType, String uri,
+  public record MediaCreate(@NotBlank String mediaType, String mimeType, @NotBlank String uri,
       String title, String note, Instant takenAt,
       List<BindingDtos.MediaEntryCreate> mediaEntries) {
   }
 
-  public record MediaUpdate(String mediaType, String mimeType, String uri,
+  public record MediaUpdate(@NotBlank String mediaType, String mimeType, @NotBlank String uri,
       String title, String note, Instant takenAt) {
   }
 }

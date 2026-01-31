@@ -4,6 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import cz.vh.lide.core.service.EntryService;
 import cz.vh.lide.ws.dto.EntryDtos.EntryCreate;
@@ -33,6 +35,23 @@ public class EntryController {
     return ResponseEntity.ok(items);
   }
 
+  @GetMapping(params = {"q", "page", "size"})
+  public ResponseEntity<org.springframework.data.domain.Page<EntryView>> list(
+      @RequestParam(required = false) String q,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size) {
+    var pageable = org.springframework.data.domain.PageRequest.of(Math.max(0, page), Math.max(1, size));
+    cz.vh.lide.db.filter.EntryFilter filter = null;
+    if (q != null && !q.isBlank()) {
+      filter = cz.vh.lide.db.filter.EntryFilter.builder()
+          .titleContains(q)
+          .contentContains(q)
+          .build();
+    }
+    var pageRes = entryService.list(pageable, filter).map(WsMapper::toEntryView);
+    return ResponseEntity.ok(pageRes);
+  }
+
   @GetMapping("/{id}")
   public ResponseEntity<EntryView> get(@PathVariable UUID id) {
     return ResponseEntity.ok(WsMapper.toEntryView(entryService.get(id)));
@@ -54,6 +73,7 @@ public class EntryController {
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Soft delete entry", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
     entryService.softDelete(id);
     return ResponseEntity.noContent().build();

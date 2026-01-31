@@ -4,6 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import cz.vh.lide.core.service.MediaService;
 import cz.vh.lide.ws.dto.MediaDtos.MediaCreate;
@@ -55,6 +57,7 @@ public class MediaController {
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Soft delete media", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
     mediaService.softDelete(id);
     return ResponseEntity.noContent().build();

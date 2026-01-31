@@ -4,6 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import cz.vh.lide.core.service.TagService;
 import cz.vh.lide.ws.dto.TagDtos.TagCreate;
@@ -34,6 +36,22 @@ public class TagController {
     return ResponseEntity.ok(items);
   }
 
+  @GetMapping(params = {"q", "page", "size"})
+  public ResponseEntity<org.springframework.data.domain.Page<TagView>> list(
+      @RequestParam(required = false) String q,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size) {
+    var pageable = org.springframework.data.domain.PageRequest.of(Math.max(0, page), Math.max(1, size));
+    cz.vh.lide.db.filter.TagFilter filter = null;
+    if (q != null && !q.isBlank()) {
+      filter = cz.vh.lide.db.filter.TagFilter.builder()
+          .nameContains(q)
+          .build();
+    }
+    var pageRes = tagService.list(pageable, filter).map(WsMapper::toTagView);
+    return ResponseEntity.ok(pageRes);
+  }
+
   @GetMapping("/{id}")
   public ResponseEntity<TagView> get(@PathVariable UUID id) {
     return ResponseEntity.ok(WsMapper.toTagView(tagService.get(id)));
@@ -55,6 +73,7 @@ public class TagController {
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Soft delete tag", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> softDelete(@PathVariable UUID id) {
     tagService.softDelete(id);
     return ResponseEntity.noContent().build();

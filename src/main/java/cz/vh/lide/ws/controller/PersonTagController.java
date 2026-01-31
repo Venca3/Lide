@@ -9,6 +9,8 @@ import cz.vh.lide.ws.dto.TagDtos.TagView;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -57,6 +59,7 @@ public class PersonTagController {
   }
 
   @PostMapping("/person/{personId}/tag/{tagId}")
+  @Operation(summary = "Add person-tag link", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> add(@PathVariable UUID personId, @PathVariable UUID tagId) {
     var pId = java.util.Objects.requireNonNull(personId, "personId");
     var tId = java.util.Objects.requireNonNull(tagId, "tagId");
@@ -84,6 +87,7 @@ public class PersonTagController {
   }
 
   @DeleteMapping("/person/{personId}/tag/{tagId}")
+  @Operation(summary = "Remove person-tag link", responses = @ApiResponse(responseCode = "204", description = "No Content"))
   public ResponseEntity<Void> remove(@PathVariable UUID personId, @PathVariable UUID tagId) {
     var pId = java.util.Objects.requireNonNull(personId, "personId");
     var tId = java.util.Objects.requireNonNull(tagId, "tagId");
