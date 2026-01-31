@@ -24,11 +24,18 @@ public class ApiExceptionHandler {
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ProblemDetail handleBadRequest(IllegalArgumentException ex) {
+    String msg = ex.getMessage() == null ? "" : ex.getMessage();
+    if (msg.toLowerCase().contains("not found")) {
+      ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+      pd.setTitle("Not Found");
+      pd.setDetail(msg);
+      pd.setType(Objects.requireNonNull(URI.create("https://example.local/problems/not-found")));
+      return pd;
+    }
     ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     pd.setTitle("Bad Request");
-    pd.setDetail(ex.getMessage());
+    pd.setDetail(msg);
     pd.setType(Objects.requireNonNull(URI.create("https://example.local/problems/bad-request")));
     return pd;
   }
