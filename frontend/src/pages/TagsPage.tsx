@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +15,11 @@ import { ListRow } from "@/components/layout/ListRow";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { createTag, deleteTag, listTagsPaged, updateTag, type PagedResult, type TagDto } from "@/api/tags";
+import { TagForm, type TagFormValue } from "@/featured/tags/TagForm";
+
+const emptyTag: TagFormValue = {
+  name: "",
+};
 
 export function TagsPage() {
   const qc = useQueryClient();
@@ -26,10 +30,10 @@ export function TagsPage() {
   const size = 10;
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [newName, setNewName] = useState("");
+  const [newTag, setNewTag] = useState<TagFormValue>(emptyTag);
 
   const [editId, setEditId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editTag, setEditTag] = useState<TagFormValue>(emptyTag);
 
   // reset page to 0 when debounced filter changes
   useEffect(() => {
@@ -42,20 +46,20 @@ export function TagsPage() {
   });
 
   const createMut = useMutation({
-    mutationFn: () => createTag(newName),
+    mutationFn: () => createTag(newTag.name),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["tags"] });
       setCreateOpen(false);
-      setNewName("");
+      setNewTag(emptyTag);
     },
   });
 
   const updateMut = useMutation({
-    mutationFn: () => updateTag(editId!, editName),
+    mutationFn: () => updateTag(editId!, editTag.name),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["tags"] });
       setEditId(null);
-      setEditName("");
+      setEditTag(emptyTag);
     },
   });
 
@@ -72,6 +76,30 @@ export function TagsPage() {
 
   return (
     <div className="space-y-4">
+      <Dialog
+        open={Boolean(editId)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditId(null);
+            setEditTag(emptyTag);
+          }
+        }}
+      >
+        <DialogContent className="bg-background text-foreground">
+          <DialogHeader>
+            <DialogTitle>Rename tag</DialogTitle>
+            <DialogDescription>Update the tag name.</DialogDescription>
+          </DialogHeader>
+          <TagForm
+            value={editTag}
+            onChange={setEditTag}
+            onSubmit={() => updateMut.mutate()}
+            submitLabel={updateMut.isPending ? "Saving…" : "Save"}
+            disabled={updateMut.isPending}
+            errorText={updateMut.isError ? "Failed to update tag." : null}
+          />
+        </DialogContent>
+      </Dialog>
       <PagedListCard
         pageTitle="Tags"
         pageAction={
@@ -84,27 +112,16 @@ export function TagsPage() {
                 <DialogTitle>Create tag</DialogTitle>
                 <DialogDescription>Add a new tag to organize and categorize entries.</DialogDescription>
               </DialogHeader>
-
-              <div className="space-y-3">
-                <Input
-                  placeholder="Tag name…"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                />
-
-                <Button
-                  disabled={!newName.trim() || createMut.isPending}
-                  onClick={() => createMut.mutate()}
-                >
-                  Create
-                </Button>
-
-                {createMut.isError && (
-                  <div className="text-sm text-red-600">
-                    Failed to create tag (may already exist).
-                  </div>
-                )}
-              </div>
+              <TagForm
+                value={newTag}
+                onChange={setNewTag}
+                onSubmit={() => createMut.mutate()}
+                submitLabel={createMut.isPending ? "Creating…" : "Create"}
+                disabled={createMut.isPending}
+                errorText={
+                  createMut.isError ? "Failed to create tag (may already exist)." : null
+                }
+              />
             </DialogContent>
           </Dialog>
         }
@@ -121,70 +138,34 @@ export function TagsPage() {
         onPageChange={setPage}
         showPagination={Boolean(tagsQ.data)}
       >
-        {items.map((t) => {
-            const isEditing = editId === t.id;
-            return (
-              <ListRow
-                key={t.id}
-                deleteAction={
-                  isEditing
-                    ? undefined
-                    : {
-                        label: t.name,
-                        onDelete: () => deleteMut.mutate(t.id),
-                        isDeleting: deleteMut.isPending,
-                        confirmTitle: "Delete tag",
-                        confirmDescription: (
-                          <>Are you sure you want to delete tag '{t.name}'?</>
-                        ),
-                      }
-                }
-                right={
-                  isEditing ? (
-                    <>
-                      <Button
-                        size="sm"
-                        disabled={!editName.trim() || updateMut.isPending}
-                        onClick={() => updateMut.mutate()}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditId(null);
-                          setEditName("");
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setEditId(t.id);
-                        setEditName(t.name);
-                      }}
-                    >
-                      Rename
-                    </Button>
-                  )
-                }
+        {items.map((t) => (
+          <ListRow
+            key={t.id}
+            deleteAction={{
+              label: t.name,
+              onDelete: () => deleteMut.mutate(t.id),
+              isDeleting: deleteMut.isPending,
+              confirmTitle: "Delete tag",
+              confirmDescription: (
+                <>Are you sure you want to delete tag '{t.name}'?</>
+              ),
+            }}
+            right={
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditId(t.id);
+                  setEditTag({ name: t.name });
+                }}
               >
-                {isEditing ? (
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                  />
-                ) : (
-                  <div className="font-medium truncate">{t.name}</div>
-                )}
-              </ListRow>
-            );
-          })}
+                Rename
+              </Button>
+            }
+          >
+            <div className="font-medium truncate">{t.name}</div>
+          </ListRow>
+        ))}
       </PagedListCard>
     </div>
   );

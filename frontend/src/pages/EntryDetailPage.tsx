@@ -3,13 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 import { deleteEntry, updateEntry } from "../api/entries";
 import { getEntryDetail } from "../api/entryRead";
 import { DetailPageLayout } from "@/components/layout/DetailPageLayout";
 import { getPersonDisplayName } from "@/lib/person";
+import { EntryForm } from "@/featured/entries/EntryForm";
 
 export function EntryDetailPage() {
   const { id } = useParams();
@@ -95,6 +95,8 @@ export function EntryDetailPage() {
       return false;
     }
   };
+
+  const occurredAtInvalid = occurredAt && !isValidDateString(occurredAt);
 
   // View content - zobrazení detailu
   const viewContent = entry ? (
@@ -195,55 +197,26 @@ export function EntryDetailPage() {
         <CardTitle>Edit entry</CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-3">
-        <div>
-          <label className="text-sm font-medium">Type *</label>
-          <Input 
-            value={type} 
-            onChange={(e) => setType(e.target.value)} 
-            placeholder="Type (required)" 
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Content *</label>
-          <textarea
-            className="min-h-40 w-full rounded-md border bg-transparent p-3 text-sm"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Content (required)"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Title</label>
-          <Input 
-            value={title} 
-            onChange={(e) => setTitle(e.target.value)} 
-            placeholder="Title (optional)" 
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Occurred at</label>
-          <Input 
-            value={occurredAt} 
-            onChange={(e) => setOccurredAt(e.target.value)} 
-            placeholder="Occurred at (optional), e.g. 1989-08-11 or 1989-08-11T16:30:00Z"
-            type="datetime-local"
-          />
-          {occurredAt && !isValidDateString(occurredAt) && (
-            <div className="text-xs text-red-600 mt-1">Invalid date format</div>
-          )}
-        </div>
-
-        {saveMut.isError && (
-          <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-            Failed to save
-            {saveMut.error instanceof Error ? `: ${saveMut.error.message}` : ""}
-          </div>
-        )}
-        {deleteMut.isError && <div className="text-sm text-red-600">Failed to delete.</div>}
+      <CardContent>
+        <EntryForm
+          value={{ type, title, content, occurredAt }}
+          onChange={(v) => {
+            setType(v.type);
+            setTitle(v.title);
+            setContent(v.content);
+            setOccurredAt(v.occurredAt);
+          }}
+          onSubmit={() => saveMut.mutate()}
+          submitLabel={saveMut.isPending ? "Saving…" : "Save"}
+          disabled={saveMut.isPending || Boolean(occurredAtInvalid)}
+          errorText={
+            saveMut.isError
+              ? `Failed to save${saveMut.error instanceof Error ? `: ${saveMut.error.message}` : ""}`
+              : null
+          }
+          occurredAtErrorText={occurredAtInvalid ? "Invalid date format" : null}
+        />
+        {deleteMut.isError && <div className="text-sm text-red-600 mt-2">Failed to delete.</div>}
       </CardContent>
     </Card>
   );

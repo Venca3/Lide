@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,14 @@ import { createEntry, deleteEntry, listEntriesPaged } from "../api/entries";
 import { PagedListCard } from "@/components/layout/PagedListCard";
 import { ListRow } from "@/components/layout/ListRow";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { EntryForm, type EntryFormValue } from "@/featured/entries/EntryForm";
+
+const empty: EntryFormValue = {
+  type: "MEMORY",
+  title: "",
+  content: "",
+  occurredAt: "",
+};
 
 export function EntriesPage() {
   const qc = useQueryClient();
@@ -29,10 +36,7 @@ export function EntriesPage() {
   const size = 20;
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [type, setType] = useState("MEMORY");
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [occurredAt, setOccurredAt] = useState("");
+  const [v, setV] = useState<EntryFormValue>(empty);
 
   // reset page to 0 when debounced filter changes
   useEffect(() => {
@@ -46,7 +50,7 @@ export function EntriesPage() {
 
   const createMut = useMutation({
     mutationFn: () => {
-      const trimmedOccurredAt = occurredAt.trim();
+      const trimmedOccurredAt = v.occurredAt.trim();
       let isoDate: string | null = null;
       
       if (trimmedOccurredAt) {
@@ -58,9 +62,9 @@ export function EntriesPage() {
       }
 
       return createEntry({
-        type: type.trim(),
-        title: title.trim() || null,
-        content: content.trim(),
+        type: v.type.trim(),
+        title: v.title.trim() || null,
+        content: v.content.trim(),
         occurredAt: isoDate,
         entryTags: [],
         personEntries: [],
@@ -70,10 +74,7 @@ export function EntriesPage() {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["entries"] });
       setCreateOpen(false);
-      setType("MEMORY");
-      setTitle("");
-      setContent("");
-      setOccurredAt("");
+      setV(empty);
     },
   });
 
@@ -99,6 +100,8 @@ export function EntriesPage() {
     }
   };
 
+  const occurredAtInvalid = v.occurredAt && !isValidDateString(v.occurredAt);
+
   return (
     <div className="space-y-4">
       <PagedListCard
@@ -115,67 +118,19 @@ export function EntriesPage() {
                 <DialogDescription>Add a new entry to document events and memories.</DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium">Type *</label>
-                  <Input 
-                    value={type} 
-                    onChange={(e) => setType(e.target.value)} 
-                    placeholder="e.g. MEMORY, NOTE, EVENT" 
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Content *</label>
-                  <textarea
-                    className="min-h-28 w-full rounded-md border bg-transparent p-3 text-sm"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Main content (required)"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Title</label>
-                  <Input 
-                    value={title} 
-                    onChange={(e) => setTitle(e.target.value)} 
-                    placeholder="Optional title" 
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Occurred at</label>
-                  <Input
-                    value={occurredAt}
-                    onChange={(e) => setOccurredAt(e.target.value)}
-                    placeholder="Optional, e.g. 1989-08-11 or 1989-08-11T16:30:00Z"
-                    type="datetime-local"
-                  />
-                  {occurredAt && !isValidDateString(occurredAt) && (
-                    <div className="text-xs text-red-600 mt-1">Invalid date format</div>
-                  )}
-                </div>
-
-                <Button 
-                  disabled={
-                    !type.trim() || 
-                    !content.trim() || 
-                    !isValidDateString(occurredAt) ||
-                    createMut.isPending
-                  } 
-                  onClick={() => createMut.mutate()}
-                >
-                  {createMut.isPending ? "Creating…" : "Create"}
-                </Button>
-
-                {createMut.isError && (
-                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                    Failed to create entry
-                    {createMut.error instanceof Error ? `: ${createMut.error.message}` : ""}
-                  </div>
-                )}
-              </div>
+              <EntryForm
+                value={v}
+                onChange={setV}
+                onSubmit={() => createMut.mutate()}
+                submitLabel={createMut.isPending ? "Creating…" : "Create"}
+                disabled={createMut.isPending || Boolean(occurredAtInvalid)}
+                errorText={
+                  createMut.isError
+                    ? `Failed to create entry${createMut.error instanceof Error ? `: ${createMut.error.message}` : ""}`
+                    : null
+                }
+                occurredAtErrorText={occurredAtInvalid ? "Invalid date format" : null}
+              />
             </DialogContent>
           </Dialog>
         }

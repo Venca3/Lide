@@ -180,7 +180,7 @@ export function PersonDetailPage() {
 
   // Relationship content - tagy, entries, relations
   const relationshipContent = p ? (
-    <>
+    <div className="space-y-4 mt-4">
       <RelationshipCard
         title="Tags"
         action={
@@ -354,7 +354,7 @@ export function PersonDetailPage() {
           </div>
         </div>
       </RelationshipCard>
-    </>
+    </div>
   ) : null;
 
   return (

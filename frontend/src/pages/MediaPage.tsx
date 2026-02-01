@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -14,11 +13,23 @@ import {
 import { PagedListCard } from "@/components/layout/PagedListCard";
 import { ListRow } from "@/components/layout/ListRow";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { useNavigate } from "react-router-dom";
 
 import { createMedia, deleteMedia, listMediaPaged, type MediaDto, type PagedResult } from "@/api/media";
+import { MediaForm, type MediaFormValue } from "@/featured/media/MediaForm";
+
+const empty: MediaFormValue = {
+  mediaType: "PHOTO",
+  mimeType: "",
+  uri: "",
+  title: "",
+  note: "",
+  takenAt: "",
+};
 
 export function MediaPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const [filter, setFilter] = useState("");
   const debounced = useDebouncedValue(filter, 250);
@@ -26,12 +37,7 @@ export function MediaPage() {
   const size = 20;
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [mediaType, setMediaType] = useState("PHOTO");
-  const [mimeType, setMimeType] = useState("");
-  const [uri, setUri] = useState("");
-  const [title, setTitle] = useState("");
-  const [note, setNote] = useState("");
-  const [takenAt, setTakenAt] = useState("");
+  const [v, setV] = useState<MediaFormValue>(empty);
 
   useEffect(() => {
     setPage(0);
@@ -54,7 +60,7 @@ export function MediaPage() {
 
   const createMut = useMutation({
     mutationFn: () => {
-      const trimmedTakenAt = takenAt.trim();
+      const trimmedTakenAt = v.takenAt.trim();
       let isoDate: string | null = null;
 
       if (trimmedTakenAt) {
@@ -66,11 +72,11 @@ export function MediaPage() {
       }
 
       return createMedia({
-        mediaType: mediaType.trim(),
-        mimeType: mimeType.trim() || null,
-        uri: uri.trim(),
-        title: title.trim() || null,
-        note: note.trim() || null,
+        mediaType: v.mediaType.trim(),
+        mimeType: v.mimeType.trim() || null,
+        uri: v.uri.trim(),
+        title: v.title.trim() || null,
+        note: v.note.trim() || null,
         takenAt: isoDate,
         mediaEntries: [],
       });
@@ -78,12 +84,7 @@ export function MediaPage() {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["media"] });
       setCreateOpen(false);
-      setMediaType("PHOTO");
-      setMimeType("");
-      setUri("");
-      setTitle("");
-      setNote("");
-      setTakenAt("");
+      setV(empty);
     },
   });
 
@@ -97,6 +98,8 @@ export function MediaPage() {
   const data = q.data as PagedResult<MediaDto> | undefined;
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
+
+  const takenAtInvalid = v.takenAt && !isValidDateString(v.takenAt);
 
   return (
     <div className="space-y-4">
@@ -113,85 +116,19 @@ export function MediaPage() {
                 <DialogDescription>Add a new media item (photo, video, doc).</DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium">Media type *</label>
-                  <Input
-                    value={mediaType}
-                    onChange={(e) => setMediaType(e.target.value)}
-                    placeholder="e.g. PHOTO, VIDEO, DOC"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">URI *</label>
-                  <Input
-                    value={uri}
-                    onChange={(e) => setUri(e.target.value)}
-                    placeholder="/path/to/file or URL"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">MIME type</label>
-                  <Input
-                    value={mimeType}
-                    onChange={(e) => setMimeType(e.target.value)}
-                    placeholder="image/jpeg"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Title</label>
-                  <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Optional title"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Taken at</label>
-                  <Input
-                    value={takenAt}
-                    onChange={(e) => setTakenAt(e.target.value)}
-                    placeholder="Optional, e.g. 1989-08-11T16:30"
-                    type="datetime-local"
-                  />
-                  {takenAt && !isValidDateString(takenAt) && (
-                    <div className="text-xs text-red-600 mt-1">Invalid date format</div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Note</label>
-                  <textarea
-                    className="min-h-24 w-full rounded-md border bg-transparent p-3 text-sm"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Optional note"
-                  />
-                </div>
-
-                <Button
-                  disabled={
-                    !mediaType.trim() ||
-                    !uri.trim() ||
-                    !isValidDateString(takenAt) ||
-                    createMut.isPending
-                  }
-                  onClick={() => createMut.mutate()}
-                >
-                  {createMut.isPending ? "Creating…" : "Create"}
-                </Button>
-
-                {createMut.isError && (
-                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                    Failed to create media
-                    {createMut.error instanceof Error ? `: ${createMut.error.message}` : ""}
-                  </div>
-                )}
-              </div>
+              <MediaForm
+                value={v}
+                onChange={setV}
+                onSubmit={() => createMut.mutate()}
+                submitLabel={createMut.isPending ? "Creating…" : "Create"}
+                disabled={createMut.isPending || Boolean(takenAtInvalid)}
+                errorText={
+                  createMut.isError
+                    ? `Failed to create media${createMut.error instanceof Error ? `: ${createMut.error.message}` : ""}`
+                    : null
+                }
+                takenAtErrorText={takenAtInvalid ? "Invalid date format" : null}
+              />
             </DialogContent>
           </Dialog>
         }
@@ -215,6 +152,8 @@ export function MediaPage() {
           return (
             <ListRow
               key={m.id}
+              hoverHint="View details"
+              onClick={() => navigate(`/media/${m.id}`)}
               deleteAction={{
                 label: titleOrUri,
                 onDelete: () => deleteMut.mutate(m.id),

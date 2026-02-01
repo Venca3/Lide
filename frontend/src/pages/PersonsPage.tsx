@@ -1,13 +1,32 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { PagedListCard } from "@/components/layout/PagedListCard";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { ListRow } from "@/components/layout/ListRow";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
-import { deletePerson, listPersonsPaged, type PagedResult, type PersonDto } from "@/api/persons";
+import { createPerson, deletePerson, listPersonsPaged, type PagedResult, type PersonDto } from "@/api/persons";
+import { PersonForm, type PersonFormValue } from "@/featured/persons/PersonForm";
+
+const empty: PersonFormValue = {
+  firstName: "",
+  lastName: "",
+  nickname: "",
+  birthDate: "",
+  phone: "",
+  email: "",
+  note: "",
+};
 
 export function PersonsPage() {
   const qc = useQueryClient();
@@ -18,6 +37,9 @@ export function PersonsPage() {
   const [page, setPage] = useState(0);
   const [size] = useState(20);
 
+  const [createOpen, setCreateOpen] = useState(false);
+  const [v, setV] = useState<PersonFormValue>(empty);
+
   const personsQuery = useQuery<PagedResult<PersonDto>, Error>({
     queryKey: ["persons", debouncedQ, page, size],
     queryFn: () => listPersonsPaged(debouncedQ, page, size),
@@ -27,6 +49,28 @@ export function PersonsPage() {
     mutationFn: (id: string) => deletePerson(id),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["persons"] });
+    },
+  });
+
+  const createMut = useMutation({
+    mutationFn: () =>
+      createPerson({
+        firstName: v.firstName.trim(),
+        lastName: v.lastName.trim() || null,
+        nickname: v.nickname.trim() || null,
+        birthDate: v.birthDate.trim() || null,
+        phone: v.phone.trim() || null,
+        email: v.email.trim() || null,
+        note: v.note.trim() || null,
+        personEntries: [],
+        personTags: [],
+        relationsOut: [],
+        relationsIn: [],
+      }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["persons"] });
+      setCreateOpen(false);
+      setV(empty);
     },
   });
 
@@ -56,9 +100,25 @@ export function PersonsPage() {
       <PagedListCard
         pageTitle="Persons"
         pageAction={
-          <Button asChild>
-            <Link to="/persons/new">New person</Link>
-          </Button>
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>New person</Button>
+            </DialogTrigger>
+            <DialogContent className="bg-background text-foreground">
+              <DialogHeader>
+                <DialogTitle>Create person</DialogTitle>
+                <DialogDescription>Add a new person to your database.</DialogDescription>
+              </DialogHeader>
+              <PersonForm
+                value={v}
+                onChange={setV}
+                onSubmit={() => createMut.mutate()}
+                submitLabel={createMut.isPending ? "Creating…" : "Create"}
+                disabled={createMut.isPending}
+                errorText={createMut.isError ? "Failed to create person." : null}
+              />
+            </DialogContent>
+          </Dialog>
         }
         filter={q}
         onFilterChange={setQ}
