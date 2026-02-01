@@ -16,13 +16,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service for managing media-entry relations.
+ */
 @Service
+@Transactional(readOnly = true)
 @SuppressWarnings("unused")
 public class MediaEntryService {
 
   private final MediaEntryRepository repository;
   private final DbMapper dbMapper;
 
+  /**
+   * Creates the service with required dependencies.
+   *
+   * @param repository media-entry repository
+   * @param dbMapper mapper between DTOs and entities
+   */
   public MediaEntryService(@NonNull MediaEntryRepository repository, @NonNull DbMapper dbMapper) {
     this.repository = repository;
     this.dbMapper = dbMapper;
@@ -72,7 +82,6 @@ public class MediaEntryService {
    * @return page of media-entry DTOs
    */
   @NonNull
-  @Transactional(readOnly = true)
   public Page<MediaEntryDto> list(@NonNull Pageable pageable, MediaEntryFilter filter) {
     var spec = Objects.requireNonNull(MediaEntrySpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)
@@ -84,6 +93,7 @@ public class MediaEntryService {
    *
    * @param id relation id.
    */
+  @Transactional
   public void softDelete(@NonNull UUID id) {
     var entity = getEntity(id);
     dbValidator.validateCanDeletedEntity(entity, "MediaEntry");

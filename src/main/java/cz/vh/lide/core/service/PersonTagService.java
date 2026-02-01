@@ -16,13 +16,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service for managing person-tag relations.
+ */
 @Service
+@Transactional(readOnly = true)
 @SuppressWarnings("unused")
 public class PersonTagService {
 
   private final PersonTagRepository repository;
   private final DbMapper dbMapper;
 
+  /**
+   * Creates the service with required dependencies.
+   *
+   * @param repository person-tag repository
+   * @param dbMapper mapper between DTOs and entities
+   */
   public PersonTagService(@NonNull PersonTagRepository repository, @NonNull DbMapper dbMapper) {
     this.repository = repository;
     this.dbMapper = dbMapper;
@@ -72,7 +82,6 @@ public class PersonTagService {
    * @return page of person-tag DTOs
    */
   @NonNull
-  @Transactional(readOnly = true)
   public Page<PersonTagDto> list(@NonNull Pageable pageable, PersonTagFilter filter) {
     var spec = Objects.requireNonNull(PersonTagSpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)
@@ -84,6 +93,7 @@ public class PersonTagService {
    *
    * @param id relation id.
    */
+  @Transactional
   public void softDelete(@NonNull UUID id) {
     var entity = getEntity(id);
     dbValidator.validateCanDeletedEntity(entity, "PersonTag");

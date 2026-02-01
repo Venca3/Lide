@@ -36,7 +36,7 @@ public class TagController {
     return ResponseEntity.ok(items);
   }
 
-  @GetMapping(params = {"q", "page", "size"})
+  @GetMapping(params = {"page", "size"})
   public ResponseEntity<List<TagView>> list(
       @RequestParam(required = false) String q,
       @RequestParam(defaultValue = "0") int page,
@@ -56,14 +56,24 @@ public class TagController {
     headers.add("X-Total-Count", String.valueOf(total));
     StringBuilder link = new StringBuilder();
     var base = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentRequest();
-    if (number + 1 < totalPages) {
-      var nextUri = base.replaceQueryParam("page", number + 1).replaceQueryParam("size", size).toUriString();
-      link.append("<").append(nextUri).append(">; rel=\"next\"");
+    if (totalPages > 0 && number > 0) {
+      var firstUri = base.replaceQueryParam("page", 0).replaceQueryParam("size", size).toUriString();
+      link.append("<").append(firstUri).append(">; rel=\"first\"");
     }
     if (number > 0) {
       if (link.length() > 0) link.append(", ");
       var prevUri = base.replaceQueryParam("page", number - 1).replaceQueryParam("size", size).toUriString();
       link.append("<").append(prevUri).append(">; rel=\"prev\"");
+    }
+    if (number + 1 < totalPages) {
+      if (link.length() > 0) link.append(", ");
+      var nextUri = base.replaceQueryParam("page", number + 1).replaceQueryParam("size", size).toUriString();
+      link.append("<").append(nextUri).append(">; rel=\"next\"");
+    }
+    if (totalPages > 0 && number + 1 < totalPages) {
+      if (link.length() > 0) link.append(", ");
+      var lastUri = base.replaceQueryParam("page", Math.max(0, totalPages - 1)).replaceQueryParam("size", size).toUriString();
+      link.append("<").append(lastUri).append(">; rel=\"last\"");
     }
     if (link.length() > 0) headers.add("Link", link.toString());
     return ResponseEntity.ok().headers(headers).body(pageRes.getContent());

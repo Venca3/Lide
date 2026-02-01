@@ -20,7 +20,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service for managing media and their relations to entries.
+ */
 @Service
+@Transactional(readOnly = true)
 @SuppressWarnings("unused")
 public class MediaService {
 
@@ -29,6 +33,14 @@ public class MediaService {
   private final MediaEntryService mediaEntryService;
   private final DbMapper dbMapper;
 
+  /**
+   * Creates the service with required dependencies.
+   *
+   * @param repository media repository
+   * @param mediaEntryRepository media-entry repository
+   * @param mediaEntryService media-entry relation service
+   * @param dbMapper mapper between DTOs and entities
+   */
   public MediaService(@NonNull MediaRepository repository,
       @NonNull MediaEntryRepository mediaEntryRepository,
       @NonNull MediaEntryService mediaEntryService,
@@ -49,13 +61,16 @@ public class MediaService {
   @NonNull
   @Transactional
   public MediaDto create(@NonNull MediaDto dto) {
+    // 1) Validate input DTO for creation
     dbValidator.validateCreateEntity(dto, "Media");
 
+    // 2) Map DTO to entity
     Media entity = dbMapper.toMediaEntity(dto);
     if (entity == null) {
       throw new FatalDbException("Mapping MediaDto to Media entity resulted in null");
     }
 
+    // 3) Create/link media-entry relations
     for (var d : dto.getMediaEntries()) {
       MediaEntry entityMediaEntry;
       if (d.getId() == null) {
@@ -67,6 +82,7 @@ public class MediaService {
       JpaTools.safeLink(entity, entityMediaEntry, Media::getMediaEntries, MediaEntry::setMedia);
     }
 
+    // 4) Persist and return DTO
     var savedEntity = repository.save(entity);
     return dbMapper.toMediaDto(savedEntity);
   }
@@ -114,7 +130,6 @@ public class MediaService {
    * @return page of media DTOs
    */
   @NonNull
-  @Transactional(readOnly = true)
   public Page<MediaDto> list(@NonNull Pageable pageable, MediaFilter filter) {
     var spec = Objects.requireNonNull(MediaSpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)
@@ -126,6 +141,7 @@ public class MediaService {
    *
    * @param id media id.
    */
+  @Transactional
   public void softDelete(@NonNull UUID id) {
     var entity = getEntity(id);
     dbValidator.validateCanDeletedEntity(entity, "Media");

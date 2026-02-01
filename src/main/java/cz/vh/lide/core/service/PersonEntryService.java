@@ -16,13 +16,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service for managing person-entry relations.
+ */
 @Service
+@Transactional(readOnly = true)
 @SuppressWarnings("unused")
 public class PersonEntryService {
 
   private final PersonEntryRepository repository;
   private final DbMapper dbMapper;
 
+  /**
+   * Creates the service with required dependencies.
+   *
+   * @param repository person-entry repository
+   * @param dbMapper mapper between DTOs and entities
+   */
   public PersonEntryService(@NonNull PersonEntryRepository repository, @NonNull DbMapper dbMapper) {
     this.repository = repository;
     this.dbMapper = dbMapper;
@@ -72,7 +82,6 @@ public class PersonEntryService {
    * @return page of person-entry DTOs
    */
   @NonNull
-  @Transactional(readOnly = true)
   public Page<PersonEntryDto> list(@NonNull Pageable pageable, PersonEntryFilter filter) {
     var spec = Objects.requireNonNull(PersonEntrySpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)
@@ -84,6 +93,7 @@ public class PersonEntryService {
    *
    * @param id relation id.
    */
+  @Transactional
   public void softDelete(@NonNull UUID id) {
     var entity = getEntity(id);
     dbValidator.validateCanDeletedEntity(entity, "PersonEntry");

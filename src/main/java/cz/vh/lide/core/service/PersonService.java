@@ -23,7 +23,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service for managing persons and their relations.
+ */
 @Service
+@Transactional(readOnly = true)
 @SuppressWarnings("unused")
 public class PersonService {
 
@@ -33,6 +37,15 @@ public class PersonService {
   private final PersonRelationService personRelationService;
   private final DbMapper dbMapper;
 
+  /**
+   * Creates the service with required dependencies.
+   *
+   * @param repository person repository
+   * @param personEntryService person-entry relation service
+   * @param personTagService person-tag relation service
+   * @param personRelationService person-relation service
+   * @param dbMapper mapper between DTOs and entities
+   */
   public PersonService(@NonNull PersonRepository repository,
       @NonNull PersonEntryService personEntryService,
       @NonNull PersonTagService personTagService,
@@ -55,13 +68,16 @@ public class PersonService {
   @NonNull
   @Transactional
   public PersonDto create(@NonNull PersonDto personDto) {
+    // 1) Validate input DTO for creation
     dbValidator.validateCreateEntity(personDto, "Person");
 
+    // 2) Map DTO to entity
     Person person = dbMapper.toPersonEntity(personDto);
     if (person == null) {
       throw new FatalDbException("Mapping PersonDto to Person entity resulted in null");
     }
 
+    // 3) Create/link person-entry relations
     for (var d : personDto.getPersonEntries()) {
       PersonEntry entityEntry;
       if (d.getId() == null) {
@@ -73,6 +89,7 @@ public class PersonService {
       JpaTools.safeLink(person, entityEntry, Person::getPersonEntries, PersonEntry::setPerson);
     }
 
+    // 4) Create/link person-tag relations
     for (var d : personDto.getPersonTags()) {
       PersonTag entityEntry;
       if (d.getId() == null) {
@@ -84,6 +101,7 @@ public class PersonService {
       JpaTools.safeLink(person, entityEntry, Person::getPersonTags, PersonTag::setPerson);
     }
 
+    // 5) Create/link outgoing relations
     for (var d : personDto.getRelationsOut()) {
       PersonRelation entityEntry;
       if (d.getId() == null) {
@@ -95,6 +113,7 @@ public class PersonService {
       JpaTools.safeLink(person, entityEntry, Person::getRelationsOut, PersonRelation::setFromPerson);
     }
 
+    // 6) Create/link incoming relations
     for (var d : personDto.getRelationsIn()) {
       PersonRelation entityEntry;
       if (d.getId() == null) {
@@ -106,6 +125,7 @@ public class PersonService {
       JpaTools.safeLink(person, entityEntry, Person::getRelationsIn, PersonRelation::setToPerson);
     }
 
+    // 7) Persist and return DTO
     var savedPerson = repository.save(person);
 
     return dbMapper.toPersonDto(savedPerson);
@@ -154,7 +174,6 @@ public class PersonService {
    * @return page of person DTOs
    */
   @NonNull
-  @Transactional(readOnly = true)
   public Page<PersonDto> list(@NonNull Pageable pageable, PersonFilter filter) {
     var spec = Objects.requireNonNull(PersonSpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)
@@ -166,6 +185,7 @@ public class PersonService {
    * 
    * @param id person id.
    */
+  @Transactional
   public void softDelete(@NonNull UUID id) {
     var entity = getEntity(id);
     dbValidator.validateCanDeletedEntity(entity, "Person");

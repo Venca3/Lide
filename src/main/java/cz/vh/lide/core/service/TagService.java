@@ -21,7 +21,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service for managing tags and their relations.
+ */
 @Service
+@Transactional(readOnly = true)
 @SuppressWarnings("unused")
 public class TagService {
 
@@ -30,6 +34,14 @@ public class TagService {
   private final PersonTagService personTagService;
   private final DbMapper dbMapper;
 
+  /**
+   * Creates the service with required dependencies.
+   *
+   * @param repository tag repository
+   * @param entryTagService entry-tag relation service
+   * @param personTagService person-tag relation service
+   * @param dbMapper mapper between DTOs and entities
+   */
   public TagService(@NonNull TagRepository repository,
       @NonNull EntryTagService entryTagService,
       @NonNull PersonTagService personTagService,
@@ -50,13 +62,16 @@ public class TagService {
   @NonNull
   @Transactional
   public TagDto create(@NonNull TagDto tagDto) {
+    // 1) Validate input DTO for creation
     dbValidator.validateCreateEntity(tagDto, "Tag");
 
+    // 2) Map DTO to entity
     Tag tag = dbMapper.toTagEntity(tagDto);
     if (tag == null) {
       throw new FatalDbException("Mapping TagDto to Tag entity resulted in null");
     }
 
+    // 3) Create/link entry-tag relations
     for (var d : tagDto.getEntryTags()) {
       EntryTag entityEntry;
       if (d.getId() == null) {
@@ -68,6 +83,7 @@ public class TagService {
       JpaTools.safeLink(tag, entityEntry, Tag::getEntryTags, EntryTag::setTag);
     }
 
+    // 4) Create/link person-tag relations
     for (var d : tagDto.getPersonTags()) {
       PersonTag entityEntry;
       if (d.getId() == null) {
@@ -79,6 +95,7 @@ public class TagService {
       JpaTools.safeLink(tag, entityEntry, Tag::getPersonTags, PersonTag::setTag);
     }
 
+    // 5) Persist and return DTO
     var savedTag = repository.save(tag);
     return dbMapper.toTagDto(savedTag);
   }
@@ -126,7 +143,6 @@ public class TagService {
    * @return page of tag DTOs
    */
   @NonNull
-  @Transactional(readOnly = true)
   public Page<TagDto> list(@NonNull Pageable pageable, TagFilter filter) {
     var spec = Objects.requireNonNull(TagSpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)
@@ -138,6 +154,7 @@ public class TagService {
    *
    * @param id tag id.
    */
+  @Transactional
   public void softDelete(@NonNull UUID id) {
     var entity = getEntity(id);
     dbValidator.validateCanDeletedEntity(entity, "Tag");

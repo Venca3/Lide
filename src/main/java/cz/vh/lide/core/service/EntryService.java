@@ -23,7 +23,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service for managing entries and their relations.
+ * <p>
+ * Provides CRUD operations for entries and coordinates creation of linked
+ * entry-tag, person-entry, and media-entry relations.
+ */
 @Service
+@Transactional(readOnly = true)
 @SuppressWarnings("unused")
 public class EntryService {
 
@@ -33,6 +40,15 @@ public class EntryService {
   private final MediaEntryService mediaEntryService;
   private final DbMapper dbMapper;
 
+  /**
+   * Creates the service with required dependencies.
+   *
+   * @param repository entry repository
+   * @param entryTagService entry-tag relation service
+   * @param personEntryService person-entry relation service
+   * @param mediaEntryService media-entry relation service
+   * @param dbMapper mapper between DTOs and entities
+   */
   public EntryService(@NonNull EntryRepository repository,
       @NonNull EntryTagService entryTagService,
       @NonNull PersonEntryService personEntryService,
@@ -55,13 +71,16 @@ public class EntryService {
   @NonNull
   @Transactional
   public EntryDto create(@NonNull EntryDto entryDto) {
+    // 1) Validate input DTO for creation
     dbValidator.validateCreateEntity(entryDto, "Entry");
 
+    // 2) Map DTO to entity
     Entry entry = dbMapper.toEntryEntity(entryDto);
     if (entry == null) {
       throw new FatalDbException("Mapping EntryDto to Entry entity resulted in null");
     }
 
+    // 3) Create/link entry-tag relations
     for (var d : entryDto.getEntryTags()) {
       EntryTag entityEntry;
       if (d.getId() == null) {
@@ -73,6 +92,7 @@ public class EntryService {
       JpaTools.safeLink(entry, entityEntry, Entry::getEntryTags, EntryTag::setEntry);
     }
 
+    // 4) Create/link person-entry relations
     for (var d : entryDto.getPersonEntries()) {
       PersonEntry entityEntry;
       if (d.getId() == null) {
@@ -84,6 +104,7 @@ public class EntryService {
       JpaTools.safeLink(entry, entityEntry, Entry::getPersonEntries, PersonEntry::setEntry);
     }
 
+    // 5) Create/link media-entry relations
     for (var d : entryDto.getMediaEntries()) {
       MediaEntry entityEntry;
       if (d.getId() == null) {
@@ -95,6 +116,7 @@ public class EntryService {
       JpaTools.safeLink(entry, entityEntry, Entry::getMediaEntries, MediaEntry::setEntry);
     }
 
+    // 6) Persist and return DTO
     var savedEntry = repository.save(entry);
     return dbMapper.toEntryDto(savedEntry);
   }
@@ -139,7 +161,6 @@ public class EntryService {
    * @return list of entries.
    */
   @NonNull
-  @Transactional(readOnly = true)
   public List<EntryDto> listNotDeleted() {
     Pageable pageable = Pageable.unpaged();
     var entities = repository.findByDeletedAtIsNull(pageable);
@@ -157,7 +178,6 @@ public class EntryService {
    * @return page of entry DTOs
    */
   @NonNull
-  @Transactional(readOnly = true)
   public Page<EntryDto> list(@NonNull Pageable pageable, EntryFilter filter) {
     var spec = Objects.requireNonNull(EntrySpecifications.build(filter), "Specification must not be null");
     return repository.findAll(spec, pageable)
@@ -169,6 +189,7 @@ public class EntryService {
    *
    * @param id entry id.
    */
+  @Transactional
   public void softDelete(@NonNull UUID id) {
     var entity = getEntity(id);
     dbValidator.validateCanDeletedEntity(entity, "Entry");
