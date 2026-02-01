@@ -27,7 +27,8 @@ public class CorsConfig implements WebMvcConfigurer {
       for (String s : origins) {
         if (s != null && !s.isBlank()) list.add(s.trim());
       }
-      mapping.allowedOrigins(list.toArray(new String[0]))
+      String[] allowed = list.toArray(new String[0]);
+      mapping.allowedOrigins(java.util.Objects.requireNonNull(allowed))
           .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
     } else {
       // default: allow none (secure)
