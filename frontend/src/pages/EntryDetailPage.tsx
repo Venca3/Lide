@@ -3,13 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { RelationshipCard } from "@/components/layout/RelationshipCard";
+import { AddRelationshipDialog } from "@/components/layout/AddRelationshipDialog";
+import { TagItem } from "@/components/layout/TagItem";
 
 import { deleteEntry, updateEntry } from "../api/entries";
 import { getEntryDetail } from "../api/entryRead";
 import { DetailPageLayout } from "@/components/layout/DetailPageLayout";
 import { getPersonDisplayName } from "@/lib/person";
 import { EntryForm } from "@/featured/entries/EntryForm";
+import { listTags } from "@/api/tags";
+import { addTagToEntry, removeTagFromEntry } from "@/api/entryTag";
 
 export function EntryDetailPage() {
   const { id } = useParams();
@@ -28,6 +32,8 @@ export function EntryDetailPage() {
   const [occurredAt, setOccurredAt] = useState("");
   const [content, setContent] = useState("");
   const [editMode, setEditMode] = useState(false);
+  const [tagConfirmOpen, setTagConfirmOpen] = useState(false);
+  const [tagConfirmTarget, setTagConfirmTarget] = useState<{ id: string; label: string } | null>(null);
 
   useEffect(() => {
     if (q.data) {
@@ -79,6 +85,13 @@ export function EntryDetailPage() {
     },
   });
 
+  const removeTagMut = useMutation({
+    mutationFn: (tagId: string) => removeTagFromEntry(entryId, tagId),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["entry", entryId] });
+    },
+  });
+
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (!entryId) return <div>Missing ID in URL.</div>;
@@ -122,21 +135,59 @@ export function EntryDetailPage() {
         </CardContent>
       </Card>
 
-      {entry.tags && entry.tags.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Tags</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {entry.tags.map((tag) => (
-                <Badge key={tag.id} variant="secondary">
-                  {tag.name}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {entry.tags && (
+        <RelationshipCard
+          title="Tags"
+          action={
+            <AddRelationshipDialog<{ id: string; name: string }>
+              invalidateQueryKey={["entry", entryId]}
+              title="Add Tag"
+              buttonLabel="Add Tag"
+              placeholder="Search tags…"
+              queryKey={["tags"]}
+              queryFn={listTags}
+              filterFn={(tag, q) => tag.name.toLowerCase().includes(q.toLowerCase())}
+              labelFn={(tag) => tag.name}
+              getItemId={(tag) => tag.id}
+              isItemFiltered={(tag, existingSet) => existingSet.has(tag.id)}
+              onAddFn={(tagId) => addTagToEntry(entryId, tagId)}
+              existing={entry.tags.map((t) => t.id)}
+              disabled={q.isLoading}
+              errorMessage="Failed to add tag."
+            />
+          }
+          isEmpty={entry.tags.length === 0}
+          emptyMessage="No tags"
+          error={removeTagMut.isError ? "Failed to remove tag." : undefined}
+          confirmOpen={tagConfirmOpen}
+          onConfirmOpenChange={setTagConfirmOpen}
+          confirmTitle="Remove tag"
+          confirmDescription={
+            tagConfirmTarget
+              ? `Do you want to remove tag '${tagConfirmTarget.label}' from this entry?`
+              : "Do you want to remove this tag from this entry?"
+          }
+          isConfirming={removeTagMut.isPending}
+          onConfirm={() => {
+            if (!tagConfirmTarget) return;
+            removeTagMut.mutate(tagConfirmTarget.id);
+            setTagConfirmTarget(null);
+          }}
+        >
+          <div className="flex flex-wrap gap-2">
+            {entry.tags.map((tag) => (
+              <TagItem
+                key={tag.id}
+                label={tag.name}
+                onRemove={() => {
+                  setTagConfirmTarget({ id: tag.id, label: tag.name });
+                  setTagConfirmOpen(true);
+                }}
+                disabled={removeTagMut.isPending}
+              />
+            ))}
+          </div>
+        </RelationshipCard>
       )}
 
       {entry.persons && entry.persons.length > 0 && (

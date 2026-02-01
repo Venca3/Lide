@@ -8,7 +8,7 @@ import { DialogDescription } from "@/components/ui/dialog";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 interface AddRelationshipDialogProps<T> {
-  personId: string;
+  invalidateQueryKey: string[];
   title: string;
   buttonLabel: string;
   placeholder?: string;
@@ -30,7 +30,7 @@ interface AddRelationshipDialogProps<T> {
 }
 
 export function AddRelationshipDialog<T>({
-  personId,
+  invalidateQueryKey,
   title,
   buttonLabel,
   placeholder = "Search…",
@@ -61,7 +61,7 @@ export function AddRelationshipDialog<T>({
   const addMut = useMutation({
     mutationFn: (itemId: string) => onAddFn(itemId, extraValue),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["personread", personId] });
+      await qc.invalidateQueries({ queryKey: invalidateQueryKey });
       setOpen(false);
       setQ("");
       if (extraField) setExtraValue(extraField.defaultValue);

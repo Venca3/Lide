@@ -44,13 +44,17 @@ export function ListRow({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      className={`group flex items-center justify-between gap-3 rounded-lg border px-4 py-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 cursor-pointer ${className ?? ""}`}
-      onClick={onClick}
-      onKeyDown={onKeyDown}
+      className={`group flex items-center justify-between gap-3 rounded-lg border px-4 py-3 hover:bg-muted/50 ${className ?? ""}`}
     >
-      <div className="min-w-0 flex-1">{children}</div>
+      <div 
+        role="button"
+        tabIndex={0}
+        className="min-w-0 flex-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded"
+        onClick={onClick}
+        onKeyDown={onKeyDown}
+      >
+        {children}
+      </div>
       <div className="flex items-center gap-2">
         {hoverHint && (
           <div className="text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">

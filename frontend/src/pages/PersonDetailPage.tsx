@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ConfirmDialog } from "@/components/layout/ConfirmDialog";
 
 import { getPersonRead } from "@/api/personRead";
 import { removeTagFromPerson } from "@/api/personTags";
@@ -86,24 +85,11 @@ export function PersonDetailPage() {
     },
   });
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState<
-    | { type: "tag"; id: string; label: string }
-    | { type: "entry"; id: string; label: string; role?: string | null }
-    | null
-  >(null);
-
-  function performConfirm() {
-    if (!confirmTarget) return;
-    if (confirmTarget.type === "tag") {
-      removeTagMut.mutate(confirmTarget.id);
-    } else {
-      removeEntryMut.mutate({ entryId: confirmTarget.id, role: confirmTarget.role });
-    }
-    setConfirmOpen(false);
-    setConfirmTarget(null);
-  }
+  const [tagConfirmOpen, setTagConfirmOpen] = useState(false);
+  const [entryConfirmOpen, setEntryConfirmOpen] = useState(false);
+  const [tagConfirmTarget, setTagConfirmTarget] = useState<{ id: string; label: string } | null>(null);
+  const [entryConfirmTarget, setEntryConfirmTarget] = useState<{ id: string; label: string; role?: string | null } | null>(null);
   
   useEffect(() => {
     const person = q.data;
@@ -185,7 +171,7 @@ export function PersonDetailPage() {
         title="Tags"
         action={
           <AddRelationshipDialog<{ id: string; name: string; color?: string }>
-            personId={personId}
+            invalidateQueryKey={["personread", personId]}
             title="Add Tag"
             buttonLabel="Add Tag"
             placeholder="Search tags…"
@@ -203,6 +189,21 @@ export function PersonDetailPage() {
         isEmpty={p.tags.length === 0}
         emptyMessage="No tags"
         error={removeTagMut.isError ? "Failed to remove tag." : undefined}
+        confirmOpen={tagConfirmOpen}
+        onConfirmOpenChange={setTagConfirmOpen}
+        confirmTitle="Remove tag"
+        confirmDescription={
+          tagConfirmTarget
+            ? `Remove tag '${tagConfirmTarget.label}'?`
+            : "Remove this tag?"
+        }
+        isConfirming={removeTagMut.isPending}
+        onConfirm={() => {
+          if (!tagConfirmTarget) return;
+          removeTagMut.mutate(tagConfirmTarget.id);
+          setTagConfirmTarget(null);
+          setTagConfirmOpen(false);
+        }}
       >
         <div className="flex flex-wrap gap-2">
           {p.tags.map((t) => (
@@ -210,8 +211,8 @@ export function PersonDetailPage() {
               key={t.id}
               label={t.name}
               onRemove={() => {
-                setConfirmTarget({ type: "tag", id: t.id, label: t.name });
-                setConfirmOpen(true);
+                setTagConfirmTarget({ id: t.id, label: t.name });
+                setTagConfirmOpen(true);
               }}
               disabled={removeTagMut.isPending}
             />
@@ -223,7 +224,7 @@ export function PersonDetailPage() {
         title="Entries"
         action={
           <AddRelationshipDialog<{ id: string; type: string; title: string | null; content: string | null }>
-            personId={personId}
+            invalidateQueryKey={["personread", personId]}
             title="Add Entry"
             buttonLabel="Add Entry"
             placeholder="Search entries…"
@@ -261,6 +262,21 @@ export function PersonDetailPage() {
         isEmpty={p.entries.length === 0}
         emptyMessage="No entries"
         error={removeEntryMut.isError ? "Failed to remove entry." : undefined}
+        confirmOpen={entryConfirmOpen}
+        onConfirmOpenChange={setEntryConfirmOpen}
+        confirmTitle="Remove entry"
+        confirmDescription={
+          entryConfirmTarget
+            ? `Remove entry '${entryConfirmTarget.label}'?`
+            : "Remove this entry?"
+        }
+        isConfirming={removeEntryMut.isPending}
+        onConfirm={() => {
+          if (!entryConfirmTarget) return;
+          removeEntryMut.mutate({ entryId: entryConfirmTarget.id, role: entryConfirmTarget.role });
+          setEntryConfirmTarget(null);
+          setEntryConfirmOpen(false);
+        }}
       >
         <div className="space-y-2 text-sm">
           {p.entries.map((e, idx) => (
@@ -281,8 +297,8 @@ export function PersonDetailPage() {
                   size="sm"
                   disabled={removeEntryMut.isPending}
                   onClick={() => {
-                    setConfirmTarget({ type: "entry", id: e.id, label: e.title, role: e.role });
-                    setConfirmOpen(true);
+                    setEntryConfirmTarget({ id: e.id, label: e.title, role: e.role });
+                    setEntryConfirmOpen(true);
                   }}
                 >
                   Remove
@@ -383,22 +399,6 @@ export function PersonDetailPage() {
         deleteConfirmDescription={<>Are you sure you want to delete person '{getPersonDisplayName(p || {})}'? This action cannot be undone.</>}
       />
 
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Remove item"
-        description={
-          confirmTarget?.type === "tag"
-            ? `Remove tag '${confirmTarget.label}'?`
-            : confirmTarget?.type === "entry"
-            ? `Remove entry '${confirmTarget.label}'?`
-            : "Are you sure?"
-        }
-        confirmLabel="Remove"
-        confirmVariant="destructive"
-        isConfirming={removeTagMut.isPending || removeEntryMut.isPending}
-        onConfirm={() => performConfirm()}
-      />
     </>
   );
 }
