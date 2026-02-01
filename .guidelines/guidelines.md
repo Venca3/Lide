@@ -1,5 +1,39 @@
 # Lide Project Guidelines
 
+## Obsah
+- [Project Overview](#project-overview)
+- [Core Principles](#core-principles)
+  - [Architecture](#architecture)
+  - [Development Standards](#development-standards)
+    - [Database Conventions](#database-conventions)
+    - [Java Package Structure](#java-package-structure)
+    - [Naming Conventions](#naming-conventions)
+  - [API Design Patterns](#api-design-patterns)
+    - [CRUD Operations](#crud-operations)
+    - [Relationship Management](#relationship-management)
+    - [Read Aggregation](#read-aggregation)
+  - [Data Model Guidelines](#data-model-guidelines)
+    - [Core Entities](#core-entities)
+    - [Relationship Tables](#relationship-tables)
+  - [Development Workflow](#development-workflow)
+    - [Environment Setup](#environment-setup)
+    - [Database Migrations](#database-migrations)
+    - [Error Handling](#error-handling)
+  - [Frontend Guidelines](#frontend-guidelines)
+    - [TypeScript Configuration](#typescript-configuration)
+    - [Component Structure](#component-structure)
+    - [API Integration](#api-integration)
+  - [Testing Strategy](#testing-strategy)
+  - [Performance Considerations](#performance-considerations)
+  - [Security Notes](#security-notes)
+- [Common Patterns](#common-patterns)
+  - [AI Navigation Rule (Context First)](#ai-navigation-rule-context-first)
+  - [Documentation Sync Rule](#documentation-sync-rule)
+  - [Repository Layering (Current)](#repository-layering-current)
+  - [Repository Queries](#repository-queries)
+  - [Controller Response Patterns](#controller-response-patterns)
+  - [DTO Organization](#dto-organization)
+
 ## Project Overview
 Lide is a personal database application for managing people, their relationships, entries (memories/stories), media files, and tags. Built with Spring Boot backend and Vite/React frontend.
 

@@ -1,5 +1,27 @@
 # Lide – kontext projektu (DB + struktura repozitáře)
 
+## Obsah
+- [1) Runtime & porty](#1-runtime--porty)
+  - [Backend](#backend)
+  - [DB (PostgreSQL v Dockeru)](#db-postgresql-v-dockeru)
+  - [pgAdmin](#pgadmin)
+- [2) ENV proměnné (backend)](#2-env-proměnné-backend)
+- [3) DB schéma (MVP)](#3-db-sch%C3%A9ma-mvp)
+  - [Konvence](#konvence)
+  - [Tabulky systémové (Liquibase)](#tabulky-syst%C3%A9mov%C3%A9-liquibase)
+  - [3.1 Hlavní entity](#31-hlavn%C3%AD-entity)
+  - [3.2 Vazební tabulky (M:N)](#32-vazebn%C3%AD-tabulky-mn)
+  - [3.3 Vztahy mezi lidmi](#33-vztahy-mezi-lidmi)
+- [4) Backend – struktura projektu (Spring Boot)](#4-backend--struktura-projektu-spring-boot)
+  - [Root (backend v rootu repozitáře)](#root-backend-v-rootu-repozit%C3%A1%C5%99e)
+  - [Java package tree (podle aktuální struktury)](#java-package-tree-podle-aktu%C3%A1ln%C3%AD-struktury)
+- [5) Frontend – struktura projektu (Vite + React + TS)](#5-frontend--struktura-projektu-vite--react--ts)
+  - [Důležité soubory](#d%C5%AFle%C5%BEit%C3%A9-soubory)
+  - [frontend/src/](#frontendsrc)
+- [6) API – rychlý přehled (MVP)](#6-api--rychl%C3%BD-p%C5%99ehled-mvp)
+- [7) Poznámky k úpravám / konvencím](#7-pozn%C3%A1mky-k-%C3%BAprav%C3%A1m--konvenc%C3%ADm)
+- [8) API – seznam controllerů a endpointů (OpenAPI snapshot)](#8-api--seznam-controller%C5%AF-a-endpoint%C5%AF-openapi-snapshot)
+
 Tento dokument je „context pack“ pro předání jiné AI. Obsahuje:
 - kompletní seznam tabulek a jejich sloupců (MVP)
 - konvence (UUID, soft delete, timestamps)
