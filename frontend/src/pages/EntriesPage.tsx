@@ -17,6 +17,7 @@ import { createEntry, deleteEntry, listEntriesPaged } from "../api/entries";
 import { PagedListCard } from "@/components/layout/PagedListCard";
 import { ListRow } from "@/components/layout/ListRow";
 import { formatDateTime } from "@/lib/dateFormat";
+import { datetimeLocalToIso } from "@/lib/datetimeLocalConvert";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { EntryForm, type EntryFormValue } from "@/featured/entries/EntryForm";
 
@@ -52,15 +53,7 @@ export function EntriesPage() {
   const createMut = useMutation({
     mutationFn: () => {
       const trimmedOccurredAt = v.occurredAt.trim();
-      let isoDate: string | null = null;
-      
-      if (trimmedOccurredAt) {
-        try {
-          isoDate = new Date(trimmedOccurredAt).toISOString();
-        } catch {
-          throw new Error("Invalid date format");
-        }
-      }
+      const isoDate = datetimeLocalToIso(trimmedOccurredAt);
 
       return createEntry({
         type: v.type.trim(),

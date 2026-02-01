@@ -64,6 +64,21 @@ export async function apiDelete(url: string): Promise<void> {
   }
 }
 
+export async function apiPut(url: string): Promise<void> {
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) {
+    let body: unknown = undefined;
+    try {
+      body = await res.json();
+    } catch { }
+    throw new ApiError(`PUT ${url} failed`, res.status, body);
+  }
+}
+
 export async function apiPostJson<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",

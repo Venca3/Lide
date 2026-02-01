@@ -1,4 +1,5 @@
-import { apiDelete, apiGet, apiPostJson } from "./http";
+import { apiDelete, apiGet, apiPostJson, apiPutJson } from "./http";
+import { normalizeString } from "@/lib/stringNormalize";
 
 export type PagedResult<T> = { items: T[]; total: number; link?: string };
 
@@ -16,6 +17,13 @@ export type PersonRelationCreate = {
   fromPersonId: string;
   toPersonId: string;
   type: string;
+  note?: string | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+};
+
+export type PersonRelationUpdate = {
+  type?: string;
   note?: string | null;
   validFrom?: string | null;
   validTo?: string | null;
@@ -83,7 +91,22 @@ export async function listRelationsToPaged(
  * Creates a new person relation
  */
 export function createPersonRelation(data: PersonRelationCreate) {
-  return apiPostJson<PersonRelationDto>("/api/personrelation", data);
+  return apiPostJson<PersonRelationDto>("/api/personrelation", {
+    ...data,
+    type: normalizeString(data.type),
+    note: data.note ? normalizeString(data.note) : null,
+  });
+}
+
+/**
+ * Updates an existing person relation
+ */
+export function updatePersonRelation(relationId: string, data: PersonRelationUpdate) {
+  return apiPutJson<PersonRelationDto>(`/api/personrelation/${relationId}`, {
+    ...data,
+    type: data.type ? normalizeString(data.type) : undefined,
+    note: data.note ? normalizeString(data.note) : null,
+  });
 }
 
 /**

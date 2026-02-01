@@ -1,11 +1,13 @@
 package cz.vh.lide.ws.controller;
 
 import cz.vh.lide.core.service.PersonRelationService;
+import cz.vh.lide.core.tools.StringNormalization;
 import cz.vh.lide.db.dto.PersonDto;
 import cz.vh.lide.db.dto.PersonRelationDto;
 import cz.vh.lide.db.repository.PersonRelationsRepository;
 import cz.vh.lide.ws.controller.tools.ControllerTools;
 import cz.vh.lide.ws.dto.PersonRelationDtos.RelationCreate;
+import cz.vh.lide.ws.dto.PersonRelationDtos.RelationUpdate;
 import cz.vh.lide.ws.dto.PersonRelationDtos.RelationView;
 
 import org.springframework.data.domain.PageRequest;
@@ -140,16 +142,20 @@ public class PersonRelationController {
     var fromId = Objects.requireNonNull(req.fromPersonId(), "fromPersonId");
     var toId = Objects.requireNonNull(req.toPersonId(), "toPersonId");
     var type = Objects.requireNonNull(req.type(), "type");
+    var normalizedType = StringNormalization.normalize(type);
+    if (normalizedType.isBlank()) {
+      return ResponseEntity.badRequest().build();
+    }
     var existingActive = personRelationsRepository.findByFromPersonIdAndToPersonIdAndTypeAndDeletedAtIsNull(
-      fromId, toId, type);
+      fromId, toId, normalizedType);
     if (existingActive.isPresent()) {
       return ResponseEntity.noContent().build();
     }
     var dto = PersonRelationDto.builder()
         .fromPerson(PersonDto.builder().id(fromId).build())
         .toPerson(PersonDto.builder().id(toId).build())
-        .type(type)
-        .note(req.note())
+        .type(normalizedType)
+        .note(req.note() != null ? StringNormalization.normalize(req.note()) : null)
         .validFrom(req.validFrom())
         .validTo(req.validTo())
         .build();
@@ -161,6 +167,42 @@ public class PersonRelationController {
             created.getFromPerson() != null ? created.getFromPerson().getId() : null,
             created.getToPerson() != null ? created.getToPerson().getId() : null,
             created.getType(), created.getNote(), created.getValidFrom(), created.getValidTo()));
+  }
+
+  /**
+   * Updates an existing person relation.
+   *
+   * @param id relation id
+   * @param req update data
+   *
+   * @return updated relation
+   */
+  @PutMapping("/{id}")
+  @Operation(summary = "Update person relation", responses = @ApiResponse(responseCode = "200", description = "OK"))
+  public ResponseEntity<RelationView> update(@PathVariable UUID id, @RequestBody RelationUpdate req) {
+    var relationId = Objects.requireNonNull(id, "id");
+    var relation = personRelationsRepository.findById(relationId)
+        .orElseThrow(() -> new IllegalArgumentException("Relation not found: " + id));
+    
+    if (relation.getDeletedAt() != null) {
+      throw new IllegalStateException("Cannot update deleted relation: " + id);
+    }
+    
+    if (req.type() != null) {
+      var normalizedType = StringNormalization.normalize(req.type());
+      if (!normalizedType.isBlank()) {
+        relation.setType(normalizedType);
+      }
+    }
+    relation.setNote(req.note() != null ? StringNormalization.normalize(req.note()) : null);
+    relation.setValidFrom(req.validFrom());
+    relation.setValidTo(req.validTo());
+    
+    var updated = personRelationsRepository.save(relation);
+    return ResponseEntity.ok(new RelationView(updated.getId(),
+        updated.getFromPerson() != null ? updated.getFromPerson().getId() : null,
+        updated.getToPerson() != null ? updated.getToPerson().getId() : null,
+        updated.getType(), updated.getNote(), updated.getValidFrom(), updated.getValidTo()));
   }
 
   /**

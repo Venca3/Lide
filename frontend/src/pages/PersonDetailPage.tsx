@@ -13,16 +13,17 @@ import { PersonForm, type PersonFormValue } from "@/featured/persons/PersonForm"
 import { DetailPageLayout } from "@/components/layout/DetailPageLayout";
 import { RelationshipCard } from "@/components/layout/RelationshipCard";
 import { TagItem } from "@/components/layout/TagItem";
-import { removeEntryFromPerson } from "@/api/personEntries";
+import { removeEntryFromPerson, addEntryToPerson, updateEntryRole } from "@/api/personEntries";
 import { listTags } from "@/api/tags";
 import { listEntries } from "../api/entries";
 import { addTagToPerson } from "@/api/personTags";
-import { addEntryToPerson } from "@/api/personEntries";
 import { AddRelationshipDialog } from "@/components/layout/AddRelationshipDialog";
 import { getPersonDisplayName } from "@/lib/person";
-import { createPersonRelation, deletePersonRelation } from "@/api/personRelation";
+import { createPersonRelation, deletePersonRelation, updatePersonRelation } from "@/api/personRelation";
 import { AddPersonRelationDialog } from "@/components/layout/AddPersonRelationDialog";
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
+import { EditRelationDialog } from "@/components/layout/EditRelationDialog";
+import { EditEntryRoleDialog } from "@/components/layout/EditEntryRoleDialog";
 
 
 export function PersonDetailPage() {
@@ -95,6 +96,22 @@ export function PersonDetailPage() {
     },
   });
 
+  const updateRelationMut = useMutation({
+    mutationFn: ({ relationId, data }: { relationId: string; data: { type: string; validFrom: string | null; validTo: string | null; note: string | null } }) =>
+      updatePersonRelation(relationId, data),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["personread", personId] });
+    },
+  });
+
+  const updateEntryRoleMut = useMutation({
+    mutationFn: ({ entryId, oldRole, newRole }: { entryId: string; oldRole: string | null; newRole: string }) =>
+      updateEntryRole(personId, entryId, oldRole ?? "autor", newRole),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["personread", personId] });
+    },
+  });
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [tagConfirmOpen, setTagConfirmOpen] = useState(false);
   const [entryConfirmOpen, setEntryConfirmOpen] = useState(false);
@@ -102,6 +119,12 @@ export function PersonDetailPage() {
   const [tagConfirmTarget, setTagConfirmTarget] = useState<{ id: string; label: string } | null>(null);
   const [entryConfirmTarget, setEntryConfirmTarget] = useState<{ id: string; label: string; role?: string | null } | null>(null);
   const [relationConfirmTarget, setRelationConfirmTarget] = useState<{ id: string; label: string } | null>(null);
+  
+  const [editRelationOpen, setEditRelationOpen] = useState(false);
+  const [editRelationTarget, setEditRelationTarget] = useState<{ id: string; type: string; validFrom: string | null; validTo: string | null; note: string | null } | null>(null);
+  
+  const [editEntryRoleOpen, setEditEntryRoleOpen] = useState(false);
+  const [editEntryRoleTarget, setEditEntryRoleTarget] = useState<{ id: string; title: string; oldRole: string | null } | null>(null);
   
   useEffect(() => {
     const person = q.data;
@@ -307,6 +330,18 @@ export function PersonDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  disabled={updateEntryRoleMut.isPending || removeEntryMut.isPending}
+                  onClick={() => {
+                    setEditEntryRoleTarget({ id: e.id, title: e.title, oldRole: e.role ?? null });
+                    setEditEntryRoleOpen(true);
+                  }}
+                >
+                  Edit
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
                   disabled={removeEntryMut.isPending}
                   onClick={() => {
                     setEntryConfirmTarget({ id: e.id, label: e.title, role: e.role });
@@ -386,6 +421,23 @@ export function PersonDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    disabled={updateRelationMut.isPending || removeRelationMut.isPending}
+                    onClick={() => {
+                      setEditRelationTarget({
+                        id: r.id,
+                        type: r.type,
+                        validFrom: r.validFrom ?? null,
+                        validTo: r.validTo ?? null,
+                        note: r.note ?? null,
+                      });
+                      setEditRelationOpen(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     disabled={removeRelationMut.isPending}
                     onClick={() => {
                       setRelationConfirmTarget({ id: r.id, label: `${r.type} → ${r.otherPersonDisplayName ?? r.toPersonId}` });
@@ -425,6 +477,23 @@ export function PersonDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    disabled={updateRelationMut.isPending || removeRelationMut.isPending}
+                    onClick={() => {
+                      setEditRelationTarget({
+                        id: r.id,
+                        type: r.type,
+                        validFrom: r.validFrom ?? null,
+                        validTo: r.validTo ?? null,
+                        note: r.note ?? null,
+                      });
+                      setEditRelationOpen(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     disabled={removeRelationMut.isPending}
                     onClick={() => {
                       setRelationConfirmTarget({ id: r.id, label: `${r.type} ← ${r.otherPersonDisplayName ?? r.fromPersonId}` });
@@ -440,6 +509,47 @@ export function PersonDetailPage() {
           </div>
         </div>
       </RelationshipCard>
+
+      {editRelationOpen && editRelationTarget && (
+        <EditRelationDialog
+          open={editRelationOpen}
+          onOpenChange={setEditRelationOpen}
+          relation={{
+            type: editRelationTarget.type,
+            validFrom: editRelationTarget.validFrom,
+            validTo: editRelationTarget.validTo,
+            note: editRelationTarget.note,
+          }}
+          isPending={updateRelationMut.isPending}
+          onSave={(type, validFrom, validTo, note) => {
+            updateRelationMut.mutate({
+              relationId: editRelationTarget.id,
+              data: { type, validFrom, validTo, note },
+            });
+            setEditRelationOpen(false);
+            setEditRelationTarget(null);
+          }}
+        />
+      )}
+
+      {editEntryRoleOpen && editEntryRoleTarget && (
+        <EditEntryRoleDialog
+          open={editEntryRoleOpen}
+          onOpenChange={setEditEntryRoleOpen}
+          entryTitle={editEntryRoleTarget.title}
+          currentRole={editEntryRoleTarget.oldRole}
+          isPending={updateEntryRoleMut.isPending}
+          onSave={(newRole) => {
+            updateEntryRoleMut.mutate({
+              entryId: editEntryRoleTarget.id,
+              oldRole: editEntryRoleTarget.oldRole,
+              newRole,
+            });
+            setEditEntryRoleOpen(false);
+            setEditEntryRoleTarget(null);
+          }}
+        />
+      )}
     </div>
   ) : null;
 

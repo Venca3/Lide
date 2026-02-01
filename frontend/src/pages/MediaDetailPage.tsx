@@ -8,6 +8,7 @@ import { deleteMedia, getMedia, updateMedia } from "@/api/media";
 import { DetailPageLayout } from "@/components/layout/DetailPageLayout";
 import { MediaForm } from "@/featured/media/MediaForm";
 import { formatDateTime } from "@/lib/dateFormat";
+import { isoToDatetimeLocal, datetimeLocalToIso } from "@/lib/datetimeLocalConvert";
 
 export function MediaDetailPage() {
   const { id } = useParams();
@@ -36,7 +37,7 @@ export function MediaDetailPage() {
       setUri(q.data.uri ?? "");
       setTitle(q.data.title ?? "");
       setNote(q.data.note ?? "");
-      setTakenAt(q.data.takenAt ?? "");
+      setTakenAt(isoToDatetimeLocal(q.data.takenAt));
     }
   }, [q.data]);
 
@@ -55,15 +56,7 @@ export function MediaDetailPage() {
   const saveMut = useMutation({
     mutationFn: () => {
       const trimmedTakenAt = takenAt.trim();
-      let isoDate: string | null = null;
-
-      if (trimmedTakenAt) {
-        try {
-          isoDate = new Date(trimmedTakenAt).toISOString();
-        } catch {
-          throw new Error("Invalid date format");
-        }
-      }
+      const isoDate = datetimeLocalToIso(trimmedTakenAt);
 
       const trimmedType = mediaType.trim();
       const trimmedUri = uri.trim();

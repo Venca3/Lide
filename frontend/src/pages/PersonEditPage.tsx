@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 import { getPerson, updatePerson, deletePerson } from "@/api/persons";
 import { PersonForm, type PersonFormValue } from "@/featured/persons/PersonForm";

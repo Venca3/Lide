@@ -1,5 +1,6 @@
 package cz.vh.lide.ws.mapper;
 
+import cz.vh.lide.core.tools.StringNormalization;
 import cz.vh.lide.db.dto.EntryDto;
 import cz.vh.lide.db.dto.EntryTagDto;
 import cz.vh.lide.db.dto.MediaDto;
@@ -96,7 +97,7 @@ public final class WsMapper {
 
   public static TagDto toTagDto(TagDtos.TagCreate req) {
     return TagDto.builder()
-        .name(req.name())
+        .name(StringNormalization.normalize(req.name()))
         .entryTags(toEntryTagDtosForTag(req.entryTags()))
         .personTags(toPersonTagDtosForTag(req.personTags()))
         .build();
@@ -104,7 +105,7 @@ public final class WsMapper {
 
   public static TagDto toTagDto(TagDtos.TagUpdate req) {
     return TagDto.builder()
-        .name(req.name())
+        .name(StringNormalization.normalize(req.name()))
         .build();
   }
 

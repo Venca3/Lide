@@ -7,6 +7,7 @@ import { RelationshipCard } from "@/components/layout/RelationshipCard";
 import { AddRelationshipDialog } from "@/components/layout/AddRelationshipDialog";
 import { TagItem } from "@/components/layout/TagItem";
 import { formatDateTime } from "@/lib/dateFormat";
+import { isoToDatetimeLocal, datetimeLocalToIso } from "@/lib/datetimeLocalConvert";
 
 import { deleteEntry, updateEntry } from "../api/entries";
 import { getEntryDetail } from "../api/entryRead";
@@ -40,7 +41,7 @@ export function EntryDetailPage() {
     if (q.data) {
       setType(q.data.type ?? "");
       setTitle(q.data.title ?? "");
-      setOccurredAt(q.data.occurredAt ?? "");
+      setOccurredAt(isoToDatetimeLocal(q.data.occurredAt));
       setContent(q.data.content ?? "");
     }
   }, [q.data]);
@@ -48,15 +49,7 @@ export function EntryDetailPage() {
   const saveMut = useMutation({
     mutationFn: () => {
       const trimmedOccurredAt = occurredAt.trim();
-      let isoDate: string | null = null;
-      
-      if (trimmedOccurredAt) {
-        try {
-          isoDate = new Date(trimmedOccurredAt).toISOString();
-        } catch {
-          throw new Error("Invalid date format");
-        }
-      }
+      const isoDate = datetimeLocalToIso(trimmedOccurredAt);
 
       const trimmedType = type.trim();
       const trimmedContent = content.trim();

@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPutJson, apiPostJson } from "./http";
+import { normalizeString } from "@/lib/stringNormalize";
 
 export type TagDto = { id: string; name: string };
 
@@ -29,11 +30,11 @@ export function getTag(id: string) {
 }
 
 export function createTag(name: string) {
-  return apiPostJson<TagDto>("/api/tags", { name: name.trim() });
+  return apiPostJson<TagDto>("/api/tags", { name: normalizeString(name) });
 }
 
 export function updateTag(id: string, name: string) {
-  return apiPutJson<TagDto>(`/api/tags/${id}`, { name: name.trim() });
+  return apiPutJson<TagDto>(`/api/tags/${id}`, { name: normalizeString(name) });
 }
 
 export function deleteTag(id: string) {

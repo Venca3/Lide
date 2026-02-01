@@ -1,5 +1,6 @@
 package cz.vh.lide.ws.controller;
 
+import cz.vh.lide.core.tools.StringNormalization;
 import cz.vh.lide.db.entity.Entry;
 import cz.vh.lide.db.entity.Person;
 import cz.vh.lide.db.entity.PersonEntry;
@@ -141,8 +142,8 @@ public class PersonEntryController {
       @RequestParam(required = false) String role) {
     var pId = Objects.requireNonNull(personId, "personId");
     var eId = Objects.requireNonNull(entryId, "entryId");
-    var roleValue = role == null ? null : role.trim();
-    if (roleValue == null || roleValue.isBlank()) {
+    var roleValue = StringNormalization.normalize(role);
+    if (roleValue.isBlank()) {
       throw new IllegalArgumentException("Role is required");
     }
 
@@ -180,14 +181,60 @@ public class PersonEntryController {
       @RequestParam(required = false) String role) {
     var pId = Objects.requireNonNull(personId, "personId");
     var eId = Objects.requireNonNull(entryId, "entryId");
-    var roleValue = role == null ? null : role.trim();
-    if (roleValue == null || roleValue.isBlank()) {
+    var roleValue = StringNormalization.normalize(role);
+    if (roleValue.isBlank()) {
       throw new IllegalArgumentException("Role is required");
     }
 
     var link = personEntryRepository.findByPersonIdAndEntryIdAndRoleAndDeletedAtIsNull(pId, eId, roleValue)
         .orElseThrow(() -> new IllegalArgumentException("PersonEntry link not found"));
     personEntryRepository.softDelete(Objects.requireNonNull(link.getId(), "link id"));
+
+    return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Updates a person-entry link role.
+   *
+   * @param personId person id
+   * @param entryId entry id
+   * @param oldRole old role value (required)
+   * @param newRole new role value (required)
+   *
+   * @return 204 No Content
+   */
+  @PutMapping("/person/{personId}/entries/{entryId}")
+  @Operation(summary = "Update person-entry link role", responses = @ApiResponse(responseCode = "204", description = "No Content"))
+  public ResponseEntity<Void> updateRole(@PathVariable UUID personId,
+      @PathVariable UUID entryId,
+      @RequestParam(required = false) String oldRole,
+      @RequestParam(required = false) String newRole) {
+    var pId = Objects.requireNonNull(personId, "personId");
+    var eId = Objects.requireNonNull(entryId, "entryId");
+    var oldRoleValue = StringNormalization.normalize(oldRole);
+    var newRoleValue = StringNormalization.normalize(newRole);
+    
+    if (oldRoleValue.isBlank()) {
+      throw new IllegalArgumentException("Old role is required");
+    }
+    if (newRoleValue.isBlank()) {
+      throw new IllegalArgumentException("New role is required");
+    }
+
+    // Find existing link with old role
+    var link = personEntryRepository.findByPersonIdAndEntryIdAndRoleAndDeletedAtIsNull(pId, eId, oldRoleValue)
+        .orElseThrow(() -> new IllegalArgumentException("PersonEntry link with old role not found"));
+
+    // Check if new role already exists
+    var existingNewRole = personEntryRepository.findByPersonIdAndEntryIdAndRoleAndDeletedAtIsNull(pId, eId, newRoleValue);
+    if (existingNewRole.isPresent()) {
+      // If new role already exists, just delete the old one
+      personEntryRepository.softDelete(Objects.requireNonNull(link.getId(), "link id"));
+    } else {
+      // Update the role
+      link.setRole(newRoleValue);
+      personEntryRepository.save(link);
+    }
 
     return ResponseEntity.noContent().build();
   }

@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { createMedia, deleteMedia, listMediaPaged, type MediaDto, type PagedResult } from "@/api/media";
 import { MediaForm, type MediaFormValue } from "@/featured/media/MediaForm";
 import { formatDateTime } from "@/lib/dateFormat";
+import { datetimeLocalToIso } from "@/lib/datetimeLocalConvert";
 
 const empty: MediaFormValue = {
   mediaType: "PHOTO",
@@ -62,15 +63,7 @@ export function MediaPage() {
   const createMut = useMutation({
     mutationFn: () => {
       const trimmedTakenAt = v.takenAt.trim();
-      let isoDate: string | null = null;
-
-      if (trimmedTakenAt) {
-        try {
-          isoDate = new Date(trimmedTakenAt).toISOString();
-        } catch {
-          throw new Error("Invalid date format");
-        }
-      }
+      const isoDate = datetimeLocalToIso(trimmedTakenAt);
 
       return createMedia({
         mediaType: v.mediaType.trim(),

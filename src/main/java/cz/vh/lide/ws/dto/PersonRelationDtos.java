@@ -15,4 +15,7 @@ public final class PersonRelationDtos {
   public record RelationCreate(UUID fromPersonId, UUID toPersonId, String type,
       String note, LocalDate validFrom, LocalDate validTo) {
   }
+
+  public record RelationUpdate(String type, String note, LocalDate validFrom, LocalDate validTo) {
+  }
 }

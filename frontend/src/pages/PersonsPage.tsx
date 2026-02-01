@@ -17,7 +17,6 @@ import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { createPerson, deletePerson, listPersonsPaged, type PagedResult, type PersonDto } from "@/api/persons";
 import { PersonForm, type PersonFormValue } from "@/featured/persons/PersonForm";
-import { getPersonDisplayName } from "@/lib/person";
 import { formatDate } from "@/lib/dateFormat";
 
 const empty: PersonFormValue = {
