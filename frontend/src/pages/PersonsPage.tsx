@@ -17,6 +17,8 @@ import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { createPerson, deletePerson, listPersonsPaged, type PagedResult, type PersonDto } from "@/api/persons";
 import { PersonForm, type PersonFormValue } from "@/featured/persons/PersonForm";
+import { getPersonDisplayName } from "@/lib/person";
+import { formatDate } from "@/lib/dateFormat";
 
 const empty: PersonFormValue = {
   firstName: "",
@@ -86,15 +88,6 @@ export function PersonsPage() {
     return "Unnamed";
   };
 
-  const formatBirthDate = (birthDate: string | null) => {
-    if (!birthDate) return null;
-    const parts = birthDate.split("-");
-    if (parts.length !== 3) return birthDate;
-    const [year, month, day] = parts;
-    if (!year || !month || !day) return birthDate;
-    return `${day}.${month}.${year}`;
-  };
-
   return (
     <div className="space-y-4">
       <PagedListCard
@@ -134,7 +127,7 @@ export function PersonsPage() {
         showPagination={Boolean(personsQuery.data)}
       >
         {items.map((p) => {
-          const birthDate = formatBirthDate(p.birthDate);
+          const birthDate = formatDate(p.birthDate);
           const details = [
             p.phone,
             p.email,

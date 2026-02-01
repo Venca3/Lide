@@ -16,6 +16,7 @@ import {
 import { createEntry, deleteEntry, listEntriesPaged } from "../api/entries";
 import { PagedListCard } from "@/components/layout/PagedListCard";
 import { ListRow } from "@/components/layout/ListRow";
+import { formatDateTime } from "@/lib/dateFormat";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { EntryForm, type EntryFormValue } from "@/featured/entries/EntryForm";
 
@@ -171,7 +172,7 @@ export function EntriesPage() {
             </div>
             <div className="text-xs text-muted-foreground">
               {e.type}
-              {e.occurredAt ? ` • ${e.occurredAt}` : ""}
+              {e.occurredAt ? ` • ${formatDateTime(e.occurredAt)}` : ""}
             </div>
           </ListRow>
         ))}

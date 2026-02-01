@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { deleteMedia, getMedia, updateMedia } from "@/api/media";
 import { DetailPageLayout } from "@/components/layout/DetailPageLayout";
 import { MediaForm } from "@/featured/media/MediaForm";
+import { formatDateTime } from "@/lib/dateFormat";
 
 export function MediaDetailPage() {
   const { id } = useParams();
@@ -123,7 +124,7 @@ export function MediaDetailPage() {
         </div>
         <div>
           <div className="text-sm text-muted-foreground">Taken at</div>
-          <div>{media.takenAt || "-"}</div>
+          <div>{formatDateTime(media.takenAt) || "-"}</div>
         </div>
         <div>
           <div className="text-sm text-muted-foreground">Note</div>

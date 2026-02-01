@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RelationshipCard } from "@/components/layout/RelationshipCard";
 import { AddRelationshipDialog } from "@/components/layout/AddRelationshipDialog";
 import { TagItem } from "@/components/layout/TagItem";
+import { formatDateTime } from "@/lib/dateFormat";
 
 import { deleteEntry, updateEntry } from "../api/entries";
 import { getEntryDetail } from "../api/entryRead";
@@ -126,7 +127,7 @@ export function EntryDetailPage() {
           </div>
           <div>
             <div className="text-sm text-muted-foreground">Occurred at</div>
-            <div>{entry.occurredAt || "-"}</div>
+            <div>{formatDateTime(entry.occurredAt) || "-"}</div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground">Content</div>

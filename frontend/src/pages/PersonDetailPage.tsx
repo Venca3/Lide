@@ -20,6 +20,9 @@ import { addTagToPerson } from "@/api/personTags";
 import { addEntryToPerson } from "@/api/personEntries";
 import { AddRelationshipDialog } from "@/components/layout/AddRelationshipDialog";
 import { getPersonDisplayName } from "@/lib/person";
+import { createPersonRelation, deletePersonRelation } from "@/api/personRelation";
+import { AddPersonRelationDialog } from "@/components/layout/AddPersonRelationDialog";
+import { formatDate, formatDateTime } from "@/lib/dateFormat";
 
 
 export function PersonDetailPage() {
@@ -85,11 +88,20 @@ export function PersonDetailPage() {
     },
   });
 
+  const removeRelationMut = useMutation({
+    mutationFn: (relationId: string) => deletePersonRelation(relationId),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["personread", personId] });
+    },
+  });
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [tagConfirmOpen, setTagConfirmOpen] = useState(false);
   const [entryConfirmOpen, setEntryConfirmOpen] = useState(false);
+  const [relationConfirmOpen, setRelationConfirmOpen] = useState(false);
   const [tagConfirmTarget, setTagConfirmTarget] = useState<{ id: string; label: string } | null>(null);
   const [entryConfirmTarget, setEntryConfirmTarget] = useState<{ id: string; label: string; role?: string | null } | null>(null);
+  const [relationConfirmTarget, setRelationConfirmTarget] = useState<{ id: string; label: string } | null>(null);
   
   useEffect(() => {
     const person = q.data;
@@ -127,7 +139,7 @@ export function PersonDetailPage() {
         </div>
         <div>
           <div className="text-sm text-muted-foreground">Birth date</div>
-          <div>{p.birthDate || "-"}</div>
+          <div>{formatDate(p.birthDate) || "-"}</div>
         </div>
         <div>
           <div className="text-sm text-muted-foreground">Phone</div>
@@ -286,7 +298,7 @@ export function PersonDetailPage() {
                 <div className="text-muted-foreground">
                   {e.type}
                   {e.role ? ` • role: ${e.role}` : ""}
-                  {e.occurredAt ? ` • ${e.occurredAt}` : ""}
+                  {e.occurredAt ? ` • ${formatDateTime(e.occurredAt)}` : ""}
                 </div>
                 {e.content ? <div className="mt-1 whitespace-pre-wrap">{e.content}</div> : null}
               </div>
@@ -315,8 +327,42 @@ export function PersonDetailPage() {
 
       <RelationshipCard
         title="Relations"
-        action={<Button size="sm" disabled>Add relation</Button>}
-        isEmpty={false}
+        action={
+          <AddPersonRelationDialog
+            buttonLabel="Add relation"
+            currentPersonId={personId}
+            onAdd={async (toPersonId, type, validFrom, validTo, note) => {
+              await createPersonRelation({
+                fromPersonId: personId,
+                toPersonId,
+                type,
+                validFrom,
+                validTo,
+                note,
+              });
+              await qc.invalidateQueries({ queryKey: ["personread", personId] });
+            }}
+            isPending={false}
+            errorMessage={undefined}
+          />
+        }
+        isEmpty={p.relationsOut.length === 0 && p.relationsIn.length === 0}
+        error={removeRelationMut.isError ? "Failed to remove relation." : undefined}
+        confirmOpen={relationConfirmOpen}
+        onConfirmOpenChange={setRelationConfirmOpen}
+        confirmTitle="Remove relation"
+        confirmDescription={
+          relationConfirmTarget
+            ? `Remove relation '${relationConfirmTarget.label}'?`
+            : "Remove this relation?"
+        }
+        isConfirming={removeRelationMut.isPending}
+        onConfirm={() => {
+          if (!relationConfirmTarget) return;
+          removeRelationMut.mutate(relationConfirmTarget.id);
+          setRelationConfirmTarget(null);
+          setRelationConfirmOpen(false);
+        }}
       >
         <div className="space-y-4 text-sm">
           <div className="space-y-2">
@@ -326,18 +372,31 @@ export function PersonDetailPage() {
             )}
             {p.relationsOut.map((r) => (
               <div key={r.id} className="flex items-start justify-between gap-4">
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="font-medium">
                     {r.type} → {r.otherPersonDisplayName ?? r.toPersonId}
                   </div>
                   <div className="text-muted-foreground">
-                    {r.validFrom ?? "?"}
-                    {r.validTo ? ` – ${r.validTo}` : ""}
+                    {formatDate(r.validFrom) ?? "?"}
+                    {r.validTo ? ` – ${formatDate(r.validTo)}` : ""}
                     {r.note ? ` • ${r.note}` : ""}
                   </div>
                 </div>
-                <div className="font-mono text-xs text-muted-foreground">
-                  {r.id.slice(0, 8)}…
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={removeRelationMut.isPending}
+                    onClick={() => {
+                      setRelationConfirmTarget({ id: r.id, label: `${r.type} → ${r.otherPersonDisplayName ?? r.toPersonId}` });
+                      setRelationConfirmOpen(true);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                  <div className="font-mono text-xs text-muted-foreground">
+                    {r.id.slice(0, 8)}…
+                  </div>
                 </div>
               </div>
             ))}
@@ -352,19 +411,30 @@ export function PersonDetailPage() {
             )}
             {p.relationsIn.map((r) => (
               <div key={r.id} className="flex items-start justify-between gap-4">
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="font-medium">
                     {r.type} ← {r.otherPersonDisplayName ?? r.fromPersonId}
                   </div>
                   <div className="text-muted-foreground">
-                    {r.validFrom ?? "?"}
-                    {r.validTo ? ` – ${r.validTo}` : ""}
+                    {formatDate(r.validFrom) ?? "?"}
+                    {r.validTo ? ` – ${formatDate(r.validTo)}` : ""}
                     {r.note ? ` • ${r.note}` : ""}
                   </div>
                 </div>
-                <div className="font-mono text-xs text-muted-foreground">
-                  {r.id.slice(0, 8)}…
-                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={removeRelationMut.isPending}
+                    onClick={() => {
+                      setRelationConfirmTarget({ id: r.id, label: `${r.type} ← ${r.otherPersonDisplayName ?? r.fromPersonId}` });
+                      setRelationConfirmOpen(true);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                  <div className="font-mono text-xs text-muted-foreground">
+                    {r.id.slice(0, 8)}…                  </div>                </div>
               </div>
             ))}
           </div>

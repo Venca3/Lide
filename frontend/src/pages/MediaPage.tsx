@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 
 import { createMedia, deleteMedia, listMediaPaged, type MediaDto, type PagedResult } from "@/api/media";
 import { MediaForm, type MediaFormValue } from "@/featured/media/MediaForm";
+import { formatDateTime } from "@/lib/dateFormat";
 
 const empty: MediaFormValue = {
   mediaType: "PHOTO",
@@ -147,7 +148,7 @@ export function MediaPage() {
       >
         {items.map((m) => {
           const titleOrUri = m.title || m.uri;
-          const details = [m.mediaType, m.mimeType, m.takenAt].filter(Boolean).join(" • ");
+          const details = [m.mediaType, m.mimeType, formatDateTime(m.takenAt)].filter(Boolean).join(" • ");
 
           return (
             <ListRow
