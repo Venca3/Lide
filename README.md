@@ -131,6 +131,16 @@ Backend čte konfiguraci z env proměnných (přes VS Code launch nebo shell). D
 * `DB_USER=app_lide`
 * `DB_PASS=***`
 
+### CORS (production)
+
+If you expose the backend and host the frontend on a different origin in production, set allowed origins with `app.cors.allowed-origins` (comma-separated) in your environment or properties. Example:
+
+```
+app.cors.allowed-origins=https://app.example.com,https://admin.example.com
+```
+
+When running locally during development, Vite proxy routes `/api` to the backend and you usually do not need to set CORS.
+
 `run.env` drž lokálně, do repa commituj pouze `run.env.example`.
 
 ### Frontend
@@ -145,6 +155,34 @@ Frontend zatím žádné env nepotřebuje (proxy řeší `/api/...`).
 * `/api/tags`
 * `/api/entries`
 * `/api/media`
+
+### Paginace a vyhledávání (API)
+
+Pro většinu seznamových endpointů API podporuje jednoduché full-text vyhledávání a stránkování pomocí query parametrů:
+
+- `q` – textová full-text shoda (hledá v hlavních polích, např. `firstName`, `lastName`, `title`, `content`, `name`)
+- `page` – číslo stránky (0-based)
+- `size` – počet položek na stránku
+
+Příklad: získat druhou stránku (index 1) s 20 výsledky filtrací podle `q`:
+
+```bash
+curl -i "http://localhost:8081/api/persons?q=novak&page=1&size=20"
+```
+
+Odpověď vrací v těle pole výsledků (JSON array). Metadata stránkování jsou dostupná v HTTP hlavičkách:
+
+- `X-Total-Count`: celkový počet nalezených záznamů
+- `Link`: odkazy pro navigaci (RFC5988) s `rel="first"`, `rel="prev"`, `rel="next"`, `rel="last"` pokud jsou relevantní
+
+Příklad hlaviček (zjednodušeně):
+
+```
+X-Total-Count: 123
+Link: <http://localhost:8081/api/persons?q=novak&page=0&size=20>; rel="first", <http://...&page=2&size=20>; rel="next", <http://...&page=6&size=20>; rel="last"
+```
+
+Důvod: tělo obsahuje pouze seznam (`content`), frontend jednoduše čte `X-Total-Count` pro paginator a používá `page`/`size` parametry pro navigaci. Tento přístup je jednoduchý pro SPA klienty.
 
 ### Vazby (M:N / link tables)
 

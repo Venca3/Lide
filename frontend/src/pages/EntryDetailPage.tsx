@@ -1,10 +1,19 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 import { deleteEntry, getEntry, updateEntry } from "@/api/entries";
 
@@ -25,7 +34,7 @@ export function EntryDetailPage() {
   const [occurredAt, setOccurredAt] = useState("");
   const [content, setContent] = useState("");
 
-  useMemo(() => {
+  useEffect(() => {
     if (q.data) {
       setType(q.data.type ?? "");
       setTitle(q.data.title ?? "");
@@ -55,6 +64,13 @@ export function EntryDetailPage() {
       nav("/entries");
     },
   });
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  function performDelete() {
+    deleteMut.mutate();
+    setConfirmOpen(false);
+  }
 
   if (!entryId) return <div>Chybí ID v URL.</div>;
   if (q.isLoading) return <div>Načítám…</div>;
@@ -94,7 +110,7 @@ export function EntryDetailPage() {
               Save
             </Button>
 
-            <Button variant="outline" disabled={deleteMut.isPending} onClick={() => deleteMut.mutate()}>
+            <Button variant="outline" disabled={deleteMut.isPending} onClick={() => setConfirmOpen(true)}>
               Delete
             </Button>
           </div>
@@ -103,6 +119,23 @@ export function EntryDetailPage() {
           {deleteMut.isError && <div className="text-sm text-red-600">Nepodařilo se smazat.</div>}
         </CardContent>
       </Card>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Smazat entry</DialogTitle>
+            <DialogDescription>Opravdu chcete smazat entry '{q.data?.title ?? "(no title)"}'?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              Zrušit
+            </Button>
+            <Button onClick={() => performDelete()} disabled={deleteMut.isPending}>
+              Smazat
+            </Button>
+          </DialogFooter>
+          <DialogClose />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

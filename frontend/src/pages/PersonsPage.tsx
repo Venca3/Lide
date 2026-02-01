@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import { listPersons } from "@/api/persons";
+import { listPersonsPaged, type PagedResult, type PersonDto } from "@/api/persons";
 
 export function PersonsPage() {
   const [q, setQ] = useState("");
@@ -16,22 +16,18 @@ export function PersonsPage() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const personsQuery = useQuery({
-    queryKey: ["persons"],
-    queryFn: () => listPersons(),
+  const [page, setPage] = useState(0);
+  const [size] = useState(20);
+
+  const personsQuery = useQuery<PagedResult<PersonDto>, Error>({
+    queryKey: ["persons", debouncedQ, page, size],
+    queryFn: () => listPersonsPaged(debouncedQ, page, size),
   });
 
-  const qKey = debouncedQ.trim().toLowerCase();
-  const filtered = (personsQuery.data ?? []).filter((p) => {
-    if (!qKey) return true;
-    const hay = [p.nickname, p.firstName, p.lastName, p.email, p.phone]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-    return hay.includes(qKey);
-  });
+  const items = personsQuery.data?.items ?? [];
+  const total = personsQuery.data?.total ?? 0;
 
-  const display = (p: any) =>
+  const display = (p: PersonDto) =>
     p.nickname ?? ([p.firstName, p.lastName].filter(Boolean).join(" ") || "Person");
 
   return (
@@ -60,7 +56,7 @@ export function PersonsPage() {
 
           {personsQuery.data && (
             <div className="space-y-2">
-              {filtered.map((p) => (
+              {items.map((p) => (
                 <div key={p.id} className="flex items-center justify-between">
                   <div>{display(p)}</div>
                   <Link className="text-sm underline" to={`/persons/${p.id}`}>
@@ -68,9 +64,30 @@ export function PersonsPage() {
                   </Link>
                 </div>
               ))}
-              {filtered.length === 0 && (
+              {items.length === 0 && (
                 <div className="text-sm text-muted-foreground">Nic nenalezeno</div>
               )}
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="text-sm">Celkem: {total}</div>
+                <div className="space-x-2">
+                  <button
+                    className="btn"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    Prev
+                  </button>
+                  <span className="text-sm">Stránka {page + 1}</span>
+                  <button
+                    className="btn"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={(page + 1) * size >= total}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

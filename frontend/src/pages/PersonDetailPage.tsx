@@ -1,13 +1,25 @@
 import { useParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 import { getPersonRead } from "@/api/personRead";
 import { removeTagFromPerson } from "@/api/personTags";
+import { updatePerson } from "@/api/persons";
+import { PersonForm, type PersonFormValue } from "@/featured/persons/PersonForm";
 import { AddTagDialog } from "@/featured/tags/AddTagDialog";
 
 import { removeEntryFromPerson } from "@/api/personEntries";
@@ -31,6 +43,16 @@ export function PersonDetailPage() {
   const personId = id ?? "";
 
   const qc = useQueryClient();
+  const [editMode, setEditMode] = useState(false);
+  const [formValue, setFormValue] = useState<PersonFormValue>({
+    firstName: "",
+    lastName: "",
+    nickname: "",
+    birthDate: "",
+    phone: "",
+    email: "",
+    note: "",
+  });
 
   const q = useQuery({
     queryKey: ["personread", personId],
@@ -53,6 +75,54 @@ export function PersonDetailPage() {
     },
   });
 
+  const updateMut = useMutation({
+    mutationFn: () =>
+      updatePerson(personId, {
+        firstName: formValue.firstName.trim() || null,
+        lastName: formValue.lastName.trim() || null,
+        nickname: formValue.nickname.trim() || null,
+        birthDate: formValue.birthDate.trim() || null,
+        phone: formValue.phone.trim() || null,
+        email: formValue.email.trim() || null,
+        note: formValue.note.trim() || null,
+      }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["personread", personId] });
+      setEditMode(false);
+    },
+  });
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<
+    | { type: "tag"; id: string; label: string }
+    | { type: "entry"; id: string; label: string; role?: string | null }
+    | null
+  >(null);
+
+  function performConfirm() {
+    if (!confirmTarget) return;
+    if (confirmTarget.type === "tag") {
+      removeTagMut.mutate(confirmTarget.id);
+    } else {
+      removeEntryMut.mutate({ entryId: confirmTarget.id, role: confirmTarget.role });
+    }
+    setConfirmOpen(false);
+    setConfirmTarget(null);
+  }
+  
+  useEffect(() => {
+    const person = q.data;
+    if (!person) return;
+    setFormValue({
+      firstName: person.firstName ?? "",
+      lastName: person.lastName ?? "",
+      nickname: person.nickname ?? "",
+      birthDate: person.birthDate ?? "",
+      phone: person.phone ?? "",
+      email: person.email ?? "",
+      note: person.note ?? "",
+    });
+  }, [q.data]);
 
   if (!personId) return <div>Chybí ID v URL.</div>;
   if (q.isLoading) return <div>Načítám detail…</div>;
@@ -68,9 +138,24 @@ export function PersonDetailPage() {
           <div className="text-sm text-muted-foreground font-mono">{p.id}</div>
         </div>
 
-        <Button variant="outline" asChild>
-          <Link to="/persons">Zpět</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/persons">Zpět</Link>
+          </Button>
+
+          {!editMode ? (
+            <Button onClick={() => setEditMode(true)}>Edit</Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button disabled={updateMut.isPending} onClick={() => updateMut.mutate()}>
+                Save
+              </Button>
+              <Button variant="ghost" onClick={() => setEditMode(false)}>
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* TAGS - jediná sekce */}
@@ -95,13 +180,17 @@ export function PersonDetailPage() {
               <button
                 className="opacity-70 hover:opacity-100"
                 title="Remove"
-                onClick={() => removeTagMut.mutate(t.id)}
+                onClick={() => {
+                  setConfirmTarget({ type: "tag", id: t.id, label: t.name });
+                  setConfirmOpen(true);
+                }}
                 disabled={removeTagMut.isPending}
               >
                 <X className="h-4 w-4" />
               </button>
             </span>
           ))}
+          {removeTagMut.isError ? <div className="text-sm text-red-600">Nepodařilo se odebrat tag.</div> : null}
         </CardContent>
       </Card>
 
@@ -137,7 +226,10 @@ export function PersonDetailPage() {
                   variant="outline"
                   size="sm"
                   disabled={removeEntryMut.isPending}
-                  onClick={() => removeEntryMut.mutate({ entryId: e.id, role: e.role })}
+                  onClick={() => {
+                    setConfirmTarget({ type: "entry", id: e.id, label: e.title, role: e.role });
+                    setConfirmOpen(true);
+                  }}
                 >
                   Remove
                 </Button>
@@ -149,6 +241,7 @@ export function PersonDetailPage() {
               </div>
             </div>
           ))}
+          {removeEntryMut.isError ? <div className="text-sm text-red-600">Nepodařilo se odebrat entry.</div> : null}
         </CardContent>
       </Card>
 
@@ -209,6 +302,50 @@ export function PersonDetailPage() {
           </div>
         </CardContent>
       </Card>
+      {/* Inline edit form */}
+      {editMode ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Edit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PersonForm
+              value={formValue}
+              onChange={setFormValue}
+              onSubmit={() => updateMut.mutate()}
+              submitLabel={updateMut.isPending ? "Saving…" : "Save"}
+              disabled={updateMut.isPending}
+              errorText={updateMut.isError ? "Nepodařilo se uložit." : null}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Smazat položku</DialogTitle>
+            <DialogDescription>
+              {confirmTarget?.type === "tag"
+                ? `Opravdu odebrat tag '${confirmTarget.label}'?`
+                : confirmTarget?.type === "entry"
+                ? `Opravdu odebrat entry '${confirmTarget.label}'?`
+                : "Opravdu provést akci?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              Zrušit
+            </Button>
+            <Button
+              onClick={() => performConfirm()}
+              disabled={removeTagMut.isPending || removeEntryMut.isPending}
+            >
+              Smazat
+            </Button>
+          </DialogFooter>
+          <DialogClose />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

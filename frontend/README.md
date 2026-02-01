@@ -71,3 +71,42 @@ export default defineConfig([
   },
 ])
 ```
+
+## Using API pagination headers
+
+Frontend requests should read `X-Total-Count` for the total number of items and use `page`/`size` query params for navigation. The server also provides a `Link` header with `rel` links (`first`, `prev`, `next`, `last`).
+
+Example fetch usage:
+
+```ts
+async function fetchPersons(q: string, page = 0, size = 20) {
+  const url = `/api/persons?q=${encodeURIComponent(q)}&page=${page}&size=${size}`;
+  const res = await fetch(url);
+  const total = Number(res.headers.get('X-Total-Count') ?? 0);
+  const link = res.headers.get('Link');
+  const items = await res.json(); // array of persons
+  return { items, total, link };
+}
+```
+
+Frontend should prefer `X-Total-Count` for paginator totals; `Link` is optional helper for navigation links.
+
+### Vite proxy and CORS
+
+During development the frontend runs on a different port (e.g. `http://localhost:5173`). `vite.config.ts` includes a proxy mapping so requests to `/api/*` are forwarded to the backend (no CORS required). In production, the backend must allow cross-origin requests from the frontend origin; set the backend property `app.cors.allowed-origins` (comma-separated) to your deployed frontend URL(s).
+
+Example `vite.config.ts` proxy snippet (already present in this project):
+
+```ts
+server: {
+  proxy: {
+    '/api': 'http://localhost:8081'
+  }
+}
+```
+
+Example env for production backend (set in `run.env` or environment):
+
+```
+app.cors.allowed-origins=https://app.example.com
+```

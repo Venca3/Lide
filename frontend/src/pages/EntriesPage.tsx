@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { PagedResult, EntryDto } from "@/api/entries";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -11,15 +12,20 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 
-import { createEntry, deleteEntry, listEntries } from "@/api/entries";
+import { createEntry, deleteEntry, listEntriesPaged } from "@/api/entries";
 
 export function EntriesPage() {
   const qc = useQueryClient();
 
   const [filter, setFilter] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [page, setPage] = useState(0);
+  const size = 20;
 
   const [createOpen, setCreateOpen] = useState(false);
   const [type, setType] = useState("MEMORY");
@@ -32,9 +38,14 @@ export function EntriesPage() {
     return () => clearTimeout(t);
   }, [filter]);
 
+  // reset page to 0 when debounced filter changes
+  useMemo(() => {
+    setPage(0);
+  }, [debounced]);
+
   const q = useQuery({
-    queryKey: ["entries"],
-    queryFn: () => listEntries(),
+    queryKey: ["entries", debounced, page, size],
+    queryFn: () => listEntriesPaged(debounced, page, size),
   });
 
   const createMut = useMutation({
@@ -62,16 +73,20 @@ export function EntriesPage() {
     },
   });
 
-  const filtered =
-    q.data?.filter((e) => {
-      const s = debounced.trim().toLowerCase();
-      if (!s) return true;
-      return (
-        e.type.toLowerCase().includes(s) ||
-        (e.title ?? "").toLowerCase().includes(s) ||
-        (e.content ?? "").toLowerCase().includes(s)
-      );
-    }) ?? [];
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ id: string; label: string } | null>(null);
+
+  function performConfirm() {
+    if (!confirmTarget) return;
+    deleteMut.mutate(confirmTarget.id);
+    setConfirmOpen(false);
+    setConfirmTarget(null);
+  }
+
+  const data = q.data as PagedResult<EntryDto> | undefined;
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const filtered = items;
 
   return (
     <div className="space-y-4">
@@ -125,7 +140,7 @@ export function EntriesPage() {
           {q.isLoading && <div className="text-sm">Načítám…</div>}
           {q.isError && <div className="text-sm text-red-600">Chyba při načítání.</div>}
 
-          {filtered.map((e) => (
+          {filtered.map((e: EntryDto) => (
             <div key={e.id} className="flex items-center justify-between gap-3 border-b py-2 last:border-b-0">
               <div className="min-w-0">
                 <Link to={`/entries/${e.id}`} className="font-medium hover:underline">
@@ -141,7 +156,10 @@ export function EntriesPage() {
                 size="sm"
                 variant="outline"
                 disabled={deleteMut.isPending}
-                onClick={() => deleteMut.mutate(e.id)}
+                onClick={() => {
+                  setConfirmTarget({ id: e.id, label: e.title || "(no title)" });
+                  setConfirmOpen(true);
+                }}
               >
                 Delete
               </Button>
@@ -151,6 +169,38 @@ export function EntriesPage() {
           {q.data && filtered.length === 0 && (
             <div className="text-sm text-muted-foreground">Nic nenalezeno</div>
           )}
+          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Smazat entry</DialogTitle>
+                <DialogDescription>
+                  Opravdu chcete smazat entry '{confirmTarget?.label}'?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+                  Zrušit
+                </Button>
+                <Button onClick={() => performConfirm()} disabled={deleteMut.isPending}>
+                  Smazat
+                </Button>
+              </DialogFooter>
+              <DialogClose />
+            </DialogContent>
+          </Dialog>
+
+          <div className="flex items-center justify-between pt-2">
+            <div className="text-sm text-muted-foreground">Celkem: {total}</div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
+                Prev
+              </Button>
+              <div className="text-sm">Stránka {page + 1}</div>
+              <Button size="sm" disabled={(page + 1) * size >= total} onClick={() => setPage((p) => p + 1)}>
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
