@@ -23,7 +23,7 @@ export function TagsPage() {
   const [filter, setFilter] = useState("");
   const debounced = useDebouncedValue(filter, 250);
   const [page, setPage] = useState(0);
-  const size = 20;
+  const size = 10;
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");

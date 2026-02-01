@@ -5,6 +5,7 @@ import { PersonDetailPage } from "@/pages/PersonDetailPage";
 import { TagsPage } from "@/pages/TagsPage";
 import { EntriesPage } from "@/pages/EntriesPage";
 import { EntryDetailPage } from "@/pages/EntryDetailPage";
+import { MediaPage } from "@/pages/MediaPage";
 import { PersonCreatePage } from "@/pages/PersonCreatePage";
 import { PersonEditPage } from "@/pages/PersonEditPage";
 
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/tags" element={<TagsPage />} />
           <Route path="/entries" element={<EntriesPage />} />
           <Route path="/entries/:id" element={<EntryDetailPage />} />
+          <Route path="/media" element={<MediaPage />} />
           <Route path="/persons/new" element={<PersonCreatePage />} />
           <Route path="/persons/:id/edit" element={<PersonEditPage />} />
         </Routes>

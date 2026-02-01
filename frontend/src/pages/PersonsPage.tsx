@@ -42,6 +42,15 @@ export function PersonsPage() {
     return "Unnamed";
   };
 
+  const formatBirthDate = (birthDate: string | null) => {
+    if (!birthDate) return null;
+    const parts = birthDate.split("-");
+    if (parts.length !== 3) return birthDate;
+    const [year, month, day] = parts;
+    if (!year || !month || !day) return birthDate;
+    return `${day}.${month}.${year}`;
+  };
+
   return (
     <div className="space-y-4">
       <PagedListCard
@@ -65,11 +74,11 @@ export function PersonsPage() {
         showPagination={Boolean(personsQuery.data)}
       >
         {items.map((p) => {
-          const birthYear = p.birthDate ? new Date(p.birthDate).getFullYear() : null;
+          const birthDate = formatBirthDate(p.birthDate);
           const details = [
-            p.phone && `Phone: ${p.phone}`,
-            p.email && `Email: ${p.email}`,
-            birthYear && `Born: ${birthYear}`,
+            p.phone,
+            p.email,
+            birthDate,
           ]
             .filter(Boolean)
             .join(" • ");
