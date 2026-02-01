@@ -29,16 +29,34 @@ public interface PersonTagRepository extends JpaRepository<PersonTag, UUID>, Jpa
   Optional<PersonTag> findByPersonIdAndTagId(@NonNull UUID personId, @NonNull UUID tagId);
 
   /**
+   * Find non-deleted PersonTag by Person id and Tag id
+   */
+  @NonNull
+  Optional<PersonTag> findByPersonIdAndTagIdAndDeletedAtIsNull(@NonNull UUID personId, @NonNull UUID tagId);
+
+  /**
    * Find all PersonTags by Tag id.
    */
   @NonNull
   Page<PersonTag> findByTagId(@NonNull UUID tagId, @NonNull Pageable pageable);
 
   /**
+   * Find all non-deleted PersonTags by Tag id.
+   */
+  @NonNull
+  Page<PersonTag> findByTagIdAndDeletedAtIsNull(@NonNull UUID tagId, @NonNull Pageable pageable);
+
+  /**
    * Find all PersonTags by Person id.
    */
   @NonNull
   Page<PersonTag> findByPersonId(@NonNull UUID personId, @NonNull Pageable pageable);
+
+  /**
+   * Find all non-deleted PersonTags by Person id.
+   */
+  @NonNull
+  Page<PersonTag> findByPersonIdAndDeletedAtIsNull(@NonNull UUID personId, @NonNull Pageable pageable);
 
   /**
    * Pagable find all PersonTags not marked as deleted.

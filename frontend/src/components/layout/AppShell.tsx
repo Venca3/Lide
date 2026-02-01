@@ -23,9 +23,6 @@ export function AppShell({ title = "Lide", children }: Props) {
             <Button variant="outline" size="sm" asChild>
               <Link to="/entries">Entries</Link>
             </Button>
-            <Button asChild>
-              <Link to="/persons/new">New person</Link>
-            </Button>
           </div>
         </div>
       </header>

@@ -31,8 +31,9 @@ public class CorsConfig implements WebMvcConfigurer {
       mapping.allowedOrigins(java.util.Objects.requireNonNull(allowed))
           .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
     } else {
-      // default: allow none (secure)
-      mapping.allowedOrigins();
+      // default: allow localhost:5173 (Vite dev server) for development
+      mapping.allowedOrigins("http://localhost:5173", "http://localhost:5174")
+          .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
     }
     mapping.allowCredentials(true).allowedHeaders("*").maxAge(3600);
   }

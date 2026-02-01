@@ -1,21 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
-import { deleteEntry, getEntry, updateEntry } from "@/api/entries";
+import { deleteEntry, updateEntry } from "../api/entries";
+import { getEntryDetail } from "../api/entryRead";
+import { DetailPageLayout } from "@/components/layout/DetailPageLayout";
+import { getPersonDisplayName } from "@/lib/person";
 
 export function EntryDetailPage() {
   const { id } = useParams();
@@ -25,7 +19,7 @@ export function EntryDetailPage() {
 
   const q = useQuery({
     queryKey: ["entry", entryId],
-    queryFn: () => getEntry(entryId),
+    queryFn: () => getEntryDetail(entryId),
     enabled: !!entryId,
   });
 
@@ -33,6 +27,7 @@ export function EntryDetailPage() {
   const [title, setTitle] = useState("");
   const [occurredAt, setOccurredAt] = useState("");
   const [content, setContent] = useState("");
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     if (q.data) {
@@ -44,16 +39,35 @@ export function EntryDetailPage() {
   }, [q.data]);
 
   const saveMut = useMutation({
-    mutationFn: () =>
-      updateEntry(entryId, {
-        type: type.trim() || null,
-        title: title.trim() ? title.trim() : null,
-        occurredAt: occurredAt.trim() ? occurredAt.trim() : null,
-        content: content,
-      }),
+    mutationFn: () => {
+      const trimmedOccurredAt = occurredAt.trim();
+      let isoDate: string | null = null;
+      
+      if (trimmedOccurredAt) {
+        try {
+          isoDate = new Date(trimmedOccurredAt).toISOString();
+        } catch {
+          throw new Error("Invalid date format");
+        }
+      }
+
+      const trimmedType = type.trim();
+      const trimmedContent = content.trim();
+      
+      if (!trimmedType) throw new Error("Type is required");
+      if (!trimmedContent) throw new Error("Content is required");
+
+      return updateEntry(entryId, {
+        type: trimmedType,
+        title: title.trim() || null,
+        content: trimmedContent,
+        occurredAt: isoDate,
+      });
+    },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["entry", entryId] });
       await qc.invalidateQueries({ queryKey: ["entries"] });
+      setEditMode(false);
     },
   });
 
@@ -67,75 +81,195 @@ export function EntryDetailPage() {
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  function performDelete() {
-    deleteMut.mutate();
-    setConfirmOpen(false);
-  }
+  if (!entryId) return <div>Missing ID in URL.</div>;
 
-  if (!entryId) return <div>Chybí ID v URL.</div>;
-  if (q.isLoading) return <div>Načítám…</div>;
-  if (q.isError) return <div className="text-red-600">Chyba při načítání.</div>;
+  const entry = q.data;
+  const entryTitle = entry?.title || "(no title)";
 
-  return (
+  const isValidDateString = (str: string) => {
+    if (!str.trim()) return true; // optional
+    try {
+      new Date(str);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // View content - zobrazení detailu
+  const viewContent = entry ? (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          <div>
+            <div className="text-sm text-muted-foreground">Type</div>
+            <div>{entry.type || "-"}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">Title</div>
+            <div>{entry.title || "-"}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">Occurred at</div>
+            <div>{entry.occurredAt || "-"}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">Content</div>
+            <div className="whitespace-pre-wrap">{entry.content || "-"}</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {entry.tags && entry.tags.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tags</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {entry.tags.map((tag) => (
+                <Badge key={tag.id} variant="secondary">
+                  {tag.name}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {entry.persons && entry.persons.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>People</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {entry.persons.map((p) => (
+                <div key={p.personId} className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">
+                      {getPersonDisplayName({ 
+                        firstName: p.firstName, 
+                        lastName: p.lastName, 
+                        nickname: p.nickname 
+                      })}
+                    </div>
+                    {p.role && (
+                      <div className="text-sm text-muted-foreground">Role: {p.role}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {entry.media && entry.media.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Media</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {entry.media.map((m) => (
+                <div key={m.mediaId} className="border rounded p-2">
+                  <div className="font-medium">{m.title || m.uri}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Type: {m.mediaType}
+                    {m.caption && ` • ${m.caption}`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  ) : null;
+
+  // Edit content - formulář pro editaci
+  const editContent = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit entry</CardTitle>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
         <div>
-          <h1 className="text-xl font-semibold">{q.data!.title || "(no title)"}</h1>
-          <div className="text-sm text-muted-foreground font-mono">{q.data!.id}</div>
+          <label className="text-sm font-medium">Type *</label>
+          <Input 
+            value={type} 
+            onChange={(e) => setType(e.target.value)} 
+            placeholder="Type (required)" 
+          />
         </div>
 
-        <Button variant="outline" asChild>
-          <Link to="/entries">Zpět</Link>
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit</CardTitle>
-        </CardHeader>
-
-        <CardContent className="space-y-3">
-          <Input value={type} onChange={(e) => setType(e.target.value)} placeholder="type" />
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="title" />
-          <Input value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} placeholder="occurredAt (ISO)" />
+        <div>
+          <label className="text-sm font-medium">Content *</label>
           <textarea
             className="min-h-40 w-full rounded-md border bg-transparent p-3 text-sm"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="content…"
+            placeholder="Content (required)"
           />
+        </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" disabled={saveMut.isPending} onClick={() => saveMut.mutate()}>
-              Save
-            </Button>
+        <div>
+          <label className="text-sm font-medium">Title</label>
+          <Input 
+            value={title} 
+            onChange={(e) => setTitle(e.target.value)} 
+            placeholder="Title (optional)" 
+          />
+        </div>
 
-            <Button variant="outline" disabled={deleteMut.isPending} onClick={() => setConfirmOpen(true)}>
-              Delete
-            </Button>
+        <div>
+          <label className="text-sm font-medium">Occurred at</label>
+          <Input 
+            value={occurredAt} 
+            onChange={(e) => setOccurredAt(e.target.value)} 
+            placeholder="Occurred at (optional), e.g. 1989-08-11 or 1989-08-11T16:30:00Z"
+            type="datetime-local"
+          />
+          {occurredAt && !isValidDateString(occurredAt) && (
+            <div className="text-xs text-red-600 mt-1">Invalid date format</div>
+          )}
+        </div>
+
+        {saveMut.isError && (
+          <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+            Failed to save
+            {saveMut.error instanceof Error ? `: ${saveMut.error.message}` : ""}
           </div>
+        )}
+        {deleteMut.isError && <div className="text-sm text-red-600">Failed to delete.</div>}
+      </CardContent>
+    </Card>
+  );
 
-          {saveMut.isError && <div className="text-sm text-red-600">Nepodařilo se uložit.</div>}
-          {deleteMut.isError && <div className="text-sm text-red-600">Nepodařilo se smazat.</div>}
-        </CardContent>
-      </Card>
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Smazat entry</DialogTitle>
-            <DialogDescription>Opravdu chcete smazat entry '{q.data?.title ?? "(no title)"}'?</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
-              Zrušit
-            </Button>
-            <Button onClick={() => performDelete()} disabled={deleteMut.isPending}>
-              Smazat
-            </Button>
-          </DialogFooter>
-          <DialogClose />
-        </DialogContent>
-      </Dialog>
-    </div>
+  return (
+    <DetailPageLayout
+      isLoading={q.isLoading}
+      isError={q.isError}
+      errorMessage="This entry may have been deleted or is no longer available."
+      title={entryTitle}
+      subtitle={entry?.id}
+      backLink="/entries"
+      backLabel="Back"
+      isEditing={editMode}
+      onEditChange={setEditMode}
+      onSave={() => saveMut.mutate()}
+      isSavePending={saveMut.isPending}
+      saveError={saveMut.isError ? "Failed to save." : undefined}
+      viewContent={viewContent}
+      editContent={editContent}
+      onDelete={() => deleteMut.mutate()}
+      isDeletingPending={deleteMut.isPending}
+      deleteConfirmOpen={confirmOpen}
+      onDeleteConfirmOpenChange={setConfirmOpen}
+      deleteConfirmTitle="Delete entry"
+      deleteConfirmDescription={<>Are you sure you want to delete entry '{entryTitle}'? This action cannot be undone.</>}
+    />
   );
 }

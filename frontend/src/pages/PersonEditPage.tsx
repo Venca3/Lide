@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 
 import { getPerson, updatePerson, deletePerson } from "@/api/persons";
 import { PersonForm, type PersonFormValue } from "@/featured/persons/PersonForm";
+import { DetailPageLayout } from "@/components/layout/DetailPageLayout";
+import { getPersonDisplayName } from "@/lib/person";
 
 export function PersonEditPage() {
   const { id } = useParams();
@@ -70,25 +72,32 @@ export function PersonEditPage() {
     },
   });
 
-  if (!personId) return <div>Chybí ID.</div>;
-  if (q.isLoading) return <div>Načítám…</div>;
-  if (q.isError) return <div className="text-red-600">Chyba při načítání.</div>;
+  if (!personId) return <div>Missing ID in URL.</div>;
+
+  const person = q.data;
+  const displayName = person ? getPersonDisplayName(person) : "Edit person";
+
+  const [delConfirmOpen, setDelConfirmOpen] = useState(false);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Edit person</h1>
-        <Button variant="outline" asChild>
-          <Link to={`/persons/${personId}`}>Zpět</Link>
-        </Button>
-      </div>
-
+    <DetailPageLayout
+      isLoading={q.isLoading}
+      isError={q.isError}
+      errorMessage="This person may have been deleted or is no longer available."
+      title={`Edit ${displayName}`}
+      subtitle={person?.id}
+      backLink={`/persons/${personId}`}
+      backLabel="Back"
+      onDelete={() => delMut.mutate()}
+      isDeletingPending={delMut.isPending}
+      deleteConfirmOpen={delConfirmOpen}
+      onDeleteConfirmOpenChange={setDelConfirmOpen}
+      deleteConfirmTitle="Delete person"
+      deleteConfirmDescription={<>Are you sure you want to delete person '{displayName}'? This action cannot be undone.</>}
+    >
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Edit</CardTitle>
-          <Button variant="outline" disabled={delMut.isPending} onClick={() => delMut.mutate()}>
-            Delete
-          </Button>
+        <CardHeader>
+          <CardTitle>Details</CardTitle>
         </CardHeader>
         <CardContent>
           <PersonForm
@@ -97,11 +106,11 @@ export function PersonEditPage() {
             onSubmit={() => saveMut.mutate()}
             submitLabel="Save"
             disabled={saveMut.isPending}
-            errorText={saveMut.isError ? "Nepodařilo se uložit." : null}
+            errorText={saveMut.isError ? "Failed to save." : null}
           />
-          {delMut.isError ? <div className="mt-2 text-sm text-red-600">Nepodařilo se smazat.</div> : null}
+          {delMut.isError ? <div className="mt-2 text-sm text-red-600">Failed to delete.</div> : null}
         </CardContent>
       </Card>
-    </div>
+    </DetailPageLayout>
   );
 }

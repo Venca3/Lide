@@ -29,16 +29,34 @@ public interface EntryTagRepository extends JpaRepository<EntryTag, UUID>, JpaSp
   Optional<EntryTag> findByEntryIdAndTagId(@NonNull UUID entryId, @NonNull UUID tagId);
 
   /**
+   * Find non-deleted EntryTag by Entry id and Tag id.
+   */
+  @NonNull
+  Optional<EntryTag> findByEntryIdAndTagIdAndDeletedAtIsNull(@NonNull UUID entryId, @NonNull UUID tagId);
+
+  /**
    * Find all EntryTags by Entry id.
    */
   @NonNull
   Page<EntryTag> findByEntryId(@NonNull UUID entryId, @NonNull Pageable pageable);
 
   /**
+   * Find all non-deleted EntryTags by Entry id.
+   */
+  @NonNull
+  Page<EntryTag> findByEntryIdAndDeletedAtIsNull(@NonNull UUID entryId, @NonNull Pageable pageable);
+
+  /**
    * Find all EntryTags by Tag id.
    */
   @NonNull
   Page<EntryTag> findByTagId(@NonNull UUID tagId, @NonNull Pageable pageable);
+
+  /**
+   * Find all non-deleted EntryTags by Tag id.
+   */
+  @NonNull
+  Page<EntryTag> findByTagIdAndDeletedAtIsNull(@NonNull UUID tagId, @NonNull Pageable pageable);
 
   /**
    * Pagable find all Entries not marked as deleted.

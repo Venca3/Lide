@@ -29,6 +29,12 @@ public interface PersonEntryRepository extends JpaRepository<PersonEntry, UUID>,
   Optional<PersonEntry> findByPersonIdAndEntryIdAndRole(@NonNull UUID personId, @NonNull UUID entryId, @NonNull String role);
 
   /**
+   * Find non-deleted PersonEntry by Person id and Entry id and role.
+   */
+  @NonNull
+  Optional<PersonEntry> findByPersonIdAndEntryIdAndRoleAndDeletedAtIsNull(@NonNull UUID personId, @NonNull UUID entryId, @NonNull String role);
+
+  /**
    * Find all PersonEntries by Person id and Entry id.
    */
   @NonNull
@@ -41,10 +47,22 @@ public interface PersonEntryRepository extends JpaRepository<PersonEntry, UUID>,
   Page<PersonEntry> findByEntryId(@NonNull UUID entryId, @NonNull Pageable pageable);
 
   /**
+   * Find all non-deleted PersonEntries by Entry id.
+   */
+  @NonNull
+  Page<PersonEntry> findByEntryIdAndDeletedAtIsNull(@NonNull UUID entryId, @NonNull Pageable pageable);
+
+  /**
    * Find all PersonEntries by Person id.
    */
   @NonNull
   Page<PersonEntry> findByPersonId(@NonNull UUID personId, @NonNull Pageable pageable);
+
+  /**
+   * Find all non-deleted PersonEntries by Person id.
+   */
+  @NonNull
+  Page<PersonEntry> findByPersonIdAndDeletedAtIsNull(@NonNull UUID personId, @NonNull Pageable pageable);
 
   /**
    * Pagable find all PersonEntries not marked as deleted.

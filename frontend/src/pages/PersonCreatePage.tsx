@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { DetailPageLayout } from "@/components/layout/DetailPageLayout";
 
 import { createPerson } from "@/api/persons";
 import { PersonForm, type PersonFormValue } from "@/featured/persons/PersonForm";
@@ -33,6 +33,10 @@ export function PersonCreatePage() {
         phone: v.phone.trim() || null,
         email: v.email.trim() || null,
         note: v.note.trim() || null,
+        personEntries: [],
+        personTags: [],
+        relationsOut: [],
+        relationsIn: [],
       }),
     onSuccess: async (created) => {
       await qc.invalidateQueries({ queryKey: ["persons"] });
@@ -41,14 +45,11 @@ export function PersonCreatePage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">New person</h1>
-        <Button variant="outline" asChild>
-          <Link to="/persons">Zpět</Link>
-        </Button>
-      </div>
-
+    <DetailPageLayout
+      title="New person"
+      backLink="/persons"
+      backLabel="Back"
+    >
       <Card>
         <CardHeader>
           <CardTitle>Create</CardTitle>
@@ -60,10 +61,10 @@ export function PersonCreatePage() {
             onSubmit={() => mut.mutate()}
             submitLabel="Create"
             disabled={mut.isPending}
-            errorText={mut.isError ? "Nepodařilo se vytvořit osobu." : null}
+            errorText={mut.isError ? "Failed to create person." : null}
           />
         </CardContent>
       </Card>
-    </div>
+    </DetailPageLayout>
   );
 }

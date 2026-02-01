@@ -29,6 +29,15 @@ public interface PersonRelationsRepository extends JpaRepository<PersonRelation,
   Optional<PersonRelation> findByFromPersonIdAndToPersonIdAndType(@NonNull UUID fromPersonId, @NonNull UUID toPersonId, @NonNull String type);
 
   /**
+   * Find non-deleted PersonRelation by from/to person id and type.
+   */
+  @NonNull
+  Optional<PersonRelation> findByFromPersonIdAndToPersonIdAndTypeAndDeletedAtIsNull(
+      @NonNull UUID fromPersonId,
+      @NonNull UUID toPersonId,
+      @NonNull String type);
+
+  /**
    * Find all PersonRelations by Person id fromPersonId and toPersonId.
    */
   @NonNull
@@ -41,10 +50,22 @@ public interface PersonRelationsRepository extends JpaRepository<PersonRelation,
   Page<PersonRelation> findByFromPersonId(@NonNull UUID fromPersonId, @NonNull Pageable pageable);
 
   /**
+   * Find all non-deleted PersonRelations by Person id fromPersonId.
+   */
+  @NonNull
+  Page<PersonRelation> findByFromPersonIdAndDeletedAtIsNull(@NonNull UUID fromPersonId, @NonNull Pageable pageable);
+
+  /**
    * Find all PersonRelations by Person id toPersonId.
    */
   @NonNull
   Page<PersonRelation> findByToPersonId(@NonNull UUID toPersonId, @NonNull Pageable pageable);
+
+  /**
+   * Find all non-deleted PersonRelations by Person id toPersonId.
+   */
+  @NonNull
+  Page<PersonRelation> findByToPersonIdAndDeletedAtIsNull(@NonNull UUID toPersonId, @NonNull Pageable pageable);
 
   /**
    * Pagable find all PersonRelations not marked as deleted.

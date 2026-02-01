@@ -8,17 +8,38 @@ export type EntryDto = {
   occurredAt: string | null;
 };
 
+export type EntryCreateBinding = {
+  entryId?: string;
+  tagId?: string;
+};
+
+export type PersonEntryCreateBinding = {
+  personId?: string;
+  entryId?: string;
+  role?: string;
+};
+
+export type MediaEntryCreateBinding = {
+  mediaId?: string;
+  entryId?: string;
+  caption?: string;
+  sortOrder?: number;
+};
+
 export type EntryCreate = {
   type: string;
   title?: string | null;
   content: string;
   occurredAt?: string | null;
+  entryTags?: EntryCreateBinding[];
+  personEntries?: PersonEntryCreateBinding[];
+  mediaEntries?: MediaEntryCreateBinding[];
 };
 
 export type EntryUpdate = {
-  type?: string | null;
+  type: string;
   title?: string | null;
-  content?: string | null;
+  content: string;
   occurredAt?: string | null;
 };
 

@@ -19,6 +19,10 @@ export type PersonCreate = {
   phone?: string | null;
   email?: string | null;
   note?: string | null;
+  personEntries?: any[];
+  personTags?: any[];
+  relationsOut?: any[];
+  relationsIn?: any[];
 };
 
 export type PersonUpdate = {

@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
-import type { PagedResult, EntryDto } from "@/api/entries";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import type { PagedResult, EntryDto } from "../api/entries";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,17 +12,19 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-  DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 
-import { createEntry, deleteEntry, listEntriesPaged } from "@/api/entries";
+import { createEntry, deleteEntry, listEntriesPaged } from "../api/entries";
+import { PagedListCard } from "@/components/layout/PagedListCard";
+import { ListRow } from "@/components/layout/ListRow";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 export function EntriesPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const [filter, setFilter] = useState("");
-  const [debounced, setDebounced] = useState("");
+  const debounced = useDebouncedValue(filter, 250);
   const [page, setPage] = useState(0);
   const size = 20;
 
@@ -31,15 +32,10 @@ export function EntriesPage() {
   const [type, setType] = useState("MEMORY");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [occurredAt, setOccurredAt] = useState(""); // ISO nebo prázdné
-
-  useMemo(() => {
-    const t = setTimeout(() => setDebounced(filter), 250);
-    return () => clearTimeout(t);
-  }, [filter]);
+  const [occurredAt, setOccurredAt] = useState("");
 
   // reset page to 0 when debounced filter changes
-  useMemo(() => {
+  useEffect(() => {
     setPage(0);
   }, [debounced]);
 
@@ -49,13 +45,28 @@ export function EntriesPage() {
   });
 
   const createMut = useMutation({
-    mutationFn: () =>
-      createEntry({
-        type,
-        title: title.trim() ? title.trim() : null,
-        content,
-        occurredAt: occurredAt.trim() ? occurredAt.trim() : null,
-      }),
+    mutationFn: () => {
+      const trimmedOccurredAt = occurredAt.trim();
+      let isoDate: string | null = null;
+      
+      if (trimmedOccurredAt) {
+        try {
+          isoDate = new Date(trimmedOccurredAt).toISOString();
+        } catch {
+          throw new Error("Invalid date format");
+        }
+      }
+
+      return createEntry({
+        type: type.trim(),
+        title: title.trim() || null,
+        content: content.trim(),
+        occurredAt: isoDate,
+        entryTags: [],
+        personEntries: [],
+        mediaEntries: [],
+      });
+    },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["entries"] });
       setCreateOpen(false);
@@ -73,136 +84,143 @@ export function EntriesPage() {
     },
   });
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState<{ id: string; label: string } | null>(null);
-
-  function performConfirm() {
-    if (!confirmTarget) return;
-    deleteMut.mutate(confirmTarget.id);
-    setConfirmOpen(false);
-    setConfirmTarget(null);
-  }
-
   const data = q.data as PagedResult<EntryDto> | undefined;
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
   const filtered = items;
 
+  const isValidDateString = (str: string) => {
+    if (!str.trim()) return true; // optional
+    try {
+      new Date(str);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold">Entries</h1>
+      <PagedListCard
+        pageTitle="Entries"
+        pageAction={
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>New entry</Button>
+            </DialogTrigger>
 
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>New entry</Button>
-          </DialogTrigger>
-
-          <DialogContent className="bg-background text-foreground">
-            <DialogHeader>
-              <DialogTitle>Create entry</DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-3">
-              <Input value={type} onChange={(e) => setType(e.target.value)} placeholder="type (např. MEMORY)" />
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="title (optional)" />
-              <Input
-                value={occurredAt}
-                onChange={(e) => setOccurredAt(e.target.value)}
-                placeholder="occurredAt ISO (optional) např. 1989-08-11T16:30:00Z"
-              />
-              <textarea
-                className="min-h-28 w-full rounded-md border bg-transparent p-3 text-sm"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="content…"
-              />
-
-              <Button disabled={!type.trim() || !content.trim() || createMut.isPending} onClick={() => createMut.mutate()}>
-                Create
-              </Button>
-
-              {createMut.isError && (
-                <div className="text-sm text-red-600">Nepodařilo se vytvořit entry.</div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Card>
-        <CardHeader className="space-y-2">
-          <CardTitle>Search</CardTitle>
-          <Input placeholder="filtr…" value={filter} onChange={(e) => setFilter(e.target.value)} />
-        </CardHeader>
-
-        <CardContent className="space-y-2">
-          {q.isLoading && <div className="text-sm">Načítám…</div>}
-          {q.isError && <div className="text-sm text-red-600">Chyba při načítání.</div>}
-
-          {filtered.map((e: EntryDto) => (
-            <div key={e.id} className="flex items-center justify-between gap-3 border-b py-2 last:border-b-0">
-              <div className="min-w-0">
-                <Link to={`/entries/${e.id}`} className="font-medium hover:underline">
-                  {e.title || "(no title)"}
-                </Link>
-                <div className="text-xs text-muted-foreground">
-                  {e.type}
-                  {e.occurredAt ? ` • ${e.occurredAt}` : ""}
-                </div>
-              </div>
-
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={deleteMut.isPending}
-                onClick={() => {
-                  setConfirmTarget({ id: e.id, label: e.title || "(no title)" });
-                  setConfirmOpen(true);
-                }}
-              >
-                Delete
-              </Button>
-            </div>
-          ))}
-
-          {q.data && filtered.length === 0 && (
-            <div className="text-sm text-muted-foreground">Nic nenalezeno</div>
-          )}
-          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-            <DialogContent>
+            <DialogContent className="bg-background text-foreground">
               <DialogHeader>
-                <DialogTitle>Smazat entry</DialogTitle>
-                <DialogDescription>
-                  Opravdu chcete smazat entry '{confirmTarget?.label}'?
-                </DialogDescription>
+                <DialogTitle>Create entry</DialogTitle>
+                <DialogDescription>Add a new entry to document events and memories.</DialogDescription>
               </DialogHeader>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
-                  Zrušit
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">Type *</label>
+                  <Input 
+                    value={type} 
+                    onChange={(e) => setType(e.target.value)} 
+                    placeholder="e.g. MEMORY, NOTE, EVENT" 
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Content *</label>
+                  <textarea
+                    className="min-h-28 w-full rounded-md border bg-transparent p-3 text-sm"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Main content (required)"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Title</label>
+                  <Input 
+                    value={title} 
+                    onChange={(e) => setTitle(e.target.value)} 
+                    placeholder="Optional title" 
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Occurred at</label>
+                  <Input
+                    value={occurredAt}
+                    onChange={(e) => setOccurredAt(e.target.value)}
+                    placeholder="Optional, e.g. 1989-08-11 or 1989-08-11T16:30:00Z"
+                    type="datetime-local"
+                  />
+                  {occurredAt && !isValidDateString(occurredAt) && (
+                    <div className="text-xs text-red-600 mt-1">Invalid date format</div>
+                  )}
+                </div>
+
+                <Button 
+                  disabled={
+                    !type.trim() || 
+                    !content.trim() || 
+                    !isValidDateString(occurredAt) ||
+                    createMut.isPending
+                  } 
+                  onClick={() => createMut.mutate()}
+                >
+                  {createMut.isPending ? "Creating…" : "Create"}
                 </Button>
-                <Button onClick={() => performConfirm()} disabled={deleteMut.isPending}>
-                  Smazat
-                </Button>
-              </DialogFooter>
-              <DialogClose />
+
+                {createMut.isError && (
+                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                    Failed to create entry
+                    {createMut.error instanceof Error ? `: ${createMut.error.message}` : ""}
+                  </div>
+                )}
+              </div>
             </DialogContent>
           </Dialog>
-
-          <div className="flex items-center justify-between pt-2">
-            <div className="text-sm text-muted-foreground">Celkem: {total}</div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-                Prev
-              </Button>
-              <div className="text-sm">Stránka {page + 1}</div>
-              <Button size="sm" disabled={(page + 1) * size >= total} onClick={() => setPage((p) => p + 1)}>
-                Next
-              </Button>
+        }
+        filter={filter}
+        onFilterChange={setFilter}
+        isLoading={q.isLoading}
+        isError={q.isError}
+        itemsLength={filtered.length}
+        total={total}
+        page={page}
+        size={size}
+        onPageChange={setPage}
+        showPagination={Boolean(q.data)}
+      >
+        {filtered.map((e: EntryDto) => (
+          <ListRow
+            key={e.id}
+            hoverHint="View details"
+            onClick={() => navigate(`/entries/${e.id}`)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                navigate(`/entries/${e.id}`);
+              }
+            }}
+            deleteAction={{
+              label: e.title || "(no title)",
+              onDelete: () => deleteMut.mutate(e.id),
+              isDeleting: deleteMut.isPending,
+              confirmTitle: "Delete entry",
+              confirmDescription: (
+                <>Are you sure you want to delete entry '{e.title || "(no title)"}'?</>
+              ),
+            }}
+          >
+            <div className="font-medium group-hover:underline">
+              {e.title || "(no title)"}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="text-xs text-muted-foreground">
+              {e.type}
+              {e.occurredAt ? ` • ${e.occurredAt}` : ""}
+            </div>
+          </ListRow>
+        ))}
+      </PagedListCard>
     </div>
   );
 }

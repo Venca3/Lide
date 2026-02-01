@@ -1,46 +1,32 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/layout/ConfirmDialog";
 
 import { getPersonRead } from "@/api/personRead";
 import { removeTagFromPerson } from "@/api/personTags";
-import { updatePerson } from "@/api/persons";
+import { updatePerson, deletePerson } from "@/api/persons";
 import { PersonForm, type PersonFormValue } from "@/featured/persons/PersonForm";
-import { AddTagDialog } from "@/featured/tags/AddTagDialog";
-
+import { DetailPageLayout } from "@/components/layout/DetailPageLayout";
+import { RelationshipCard } from "@/components/layout/RelationshipCard";
+import { TagItem } from "@/components/layout/TagItem";
 import { removeEntryFromPerson } from "@/api/personEntries";
-import { AddEntryDialog } from "@/featured/entries/AddEntryDialog";
+import { listTags } from "@/api/tags";
+import { listEntries } from "../api/entries";
+import { addTagToPerson } from "@/api/personTags";
+import { addEntryToPerson } from "@/api/personEntries";
+import { AddRelationshipDialog } from "@/components/layout/AddRelationshipDialog";
+import { getPersonDisplayName } from "@/lib/person";
 
-
-function displayName(p: {
-  nickname?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-}) {
-  return (
-    p.nickname ||
-    [p.firstName, p.lastName].filter(Boolean).join(" ") ||
-    "Person"
-  );
-}
 
 export function PersonDetailPage() {
   const { id } = useParams();
   const personId = id ?? "";
+  const nav = useNavigate();
 
   const qc = useQueryClient();
   const [editMode, setEditMode] = useState(false);
@@ -92,7 +78,16 @@ export function PersonDetailPage() {
     },
   });
 
+  const deleteMut = useMutation({
+    mutationFn: () => deletePerson(personId),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["persons"] });
+      nav("/persons");
+    },
+  });
+
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<
     | { type: "tag"; id: string; label: string }
     | { type: "entry"; id: string; label: string; role?: string | null }
@@ -124,91 +119,150 @@ export function PersonDetailPage() {
     });
   }, [q.data]);
 
-  if (!personId) return <div>Chybí ID v URL.</div>;
-  if (q.isLoading) return <div>Načítám detail…</div>;
-  if (q.isError) return <div className="text-red-600">Chyba při načítání detailu.</div>;
+  if (!personId) return <div>Missing ID in URL.</div>;
 
-  const p = q.data!;
+  const p = q.data;
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+  // View content - základní informace o osobě
+  const viewContent = p ? (
+    <Card>
+      <CardContent className="space-y-4 pt-6">
         <div>
-          <h1 className="text-xl font-semibold">{displayName(p)}</h1>
-          <div className="text-sm text-muted-foreground font-mono">{p.id}</div>
+          <div className="text-sm text-muted-foreground">First name</div>
+          <div>{p.firstName || "-"}</div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link to="/persons">Zpět</Link>
-          </Button>
-
-          {!editMode ? (
-            <Button onClick={() => setEditMode(true)}>Edit</Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button disabled={updateMut.isPending} onClick={() => updateMut.mutate()}>
-                Save
-              </Button>
-              <Button variant="ghost" onClick={() => setEditMode(false)}>
-                Cancel
-              </Button>
-            </div>
-          )}
+        <div>
+          <div className="text-sm text-muted-foreground">Last name</div>
+          <div>{p.lastName || "-"}</div>
         </div>
-      </div>
+        <div>
+          <div className="text-sm text-muted-foreground">Nickname</div>
+          <div>{p.nickname || "-"}</div>
+        </div>
+        <div>
+          <div className="text-sm text-muted-foreground">Birth date</div>
+          <div>{p.birthDate || "-"}</div>
+        </div>
+        <div>
+          <div className="text-sm text-muted-foreground">Phone</div>
+          <div>{p.phone || "-"}</div>
+        </div>
+        <div>
+          <div className="text-sm text-muted-foreground">Email</div>
+          <div>{p.email || "-"}</div>
+        </div>
+        <div>
+          <div className="text-sm text-muted-foreground">Note</div>
+          <div className="whitespace-pre-wrap">{p.note || "-"}</div>
+        </div>
+      </CardContent>
+    </Card>
+  ) : null;
 
-      {/* TAGS - jediná sekce */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Tags</CardTitle>
-          <AddTagDialog personId={personId} existingTagIds={p.tags.map(t => t.id)} disabled={q.isLoading} />
+  // Edit content - formulář pro editaci
+  const editContent = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit person</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <PersonForm
+          value={formValue}
+          onChange={setFormValue}
+          onSubmit={() => updateMut.mutate()}
+          submitLabel={updateMut.isPending ? "Saving…" : "Save"}
+          disabled={updateMut.isPending}
+          errorText={updateMut.isError ? "Failed to save." : null}
+        />
+      </CardContent>
+    </Card>
+  );
 
-        </CardHeader>
-
-        <CardContent className="flex flex-wrap gap-2">
-          {p.tags.length === 0 && (
-            <div className="text-sm text-muted-foreground">Žádné tagy</div>
-          )}
-
-          {p.tags.map((t) => (
-            <span
-              key={t.id}
-              className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm"
-            >
-              {t.name}
-              <button
-                className="opacity-70 hover:opacity-100"
-                title="Remove"
-                onClick={() => {
-                  setConfirmTarget({ type: "tag", id: t.id, label: t.name });
-                  setConfirmOpen(true);
-                }}
-                disabled={removeTagMut.isPending}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </span>
-          ))}
-          {removeTagMut.isError ? <div className="text-sm text-red-600">Nepodařilo se odebrat tag.</div> : null}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Entries</CardTitle>
-          <AddEntryDialog
+  // Relationship content - tagy, entries, relations
+  const relationshipContent = p ? (
+    <>
+      <RelationshipCard
+        title="Tags"
+        action={
+          <AddRelationshipDialog<{ id: string; name: string; color?: string }>
             personId={personId}
-            existingPairs={p.entries.map(e => ({ entryId: e.id, role: e.role }))}
+            title="Add Tag"
+            buttonLabel="Add Tag"
+            placeholder="Search tags…"
+            queryKey={["tags"]}
+            queryFn={listTags}
+            filterFn={(tag, q) => tag.name.toLowerCase().includes(q.toLowerCase())}
+            labelFn={(tag) => tag.name}
+            getItemId={(tag) => tag.id}
+            isItemFiltered={(tag, existingSet) => existingSet.has(tag.id)}
+            onAddFn={(tagId) => addTagToPerson(personId, tagId)}
+            existing={p.tags.map(t => t.id)}
             disabled={q.isLoading}
           />
-        </CardHeader>
+        }
+        isEmpty={p.tags.length === 0}
+        emptyMessage="No tags"
+        error={removeTagMut.isError ? "Failed to remove tag." : undefined}
+      >
+        <div className="flex flex-wrap gap-2">
+          {p.tags.map((t) => (
+            <TagItem
+              key={t.id}
+              label={t.name}
+              onRemove={() => {
+                setConfirmTarget({ type: "tag", id: t.id, label: t.name });
+                setConfirmOpen(true);
+              }}
+              disabled={removeTagMut.isPending}
+            />
+          ))}
+        </div>
+      </RelationshipCard>
 
-        <CardContent className="space-y-2 text-sm">
-          {p.entries.length === 0 && (
-            <div className="text-muted-foreground">Žádné entries</div>
-          )}
-
+      <RelationshipCard
+        title="Entries"
+        action={
+          <AddRelationshipDialog<{ id: string; type: string; title: string | null; content: string | null }>
+            personId={personId}
+            title="Add Entry"
+            buttonLabel="Add Entry"
+            placeholder="Search entries…"
+            extraField={{
+              label: "Role",
+              placeholder: "Role (e.g., author, subject, witness…)",
+              defaultValue: "autor",
+            }}
+            queryKey={["entries"]}
+            queryFn={listEntries}
+            filterFn={(entry, q) => {
+              const lowerQ = q.toLowerCase();
+              return (
+                entry.type.toLowerCase().includes(lowerQ) ||
+                (entry.title ?? "").toLowerCase().includes(lowerQ) ||
+                (entry.content ?? "").toLowerCase().includes(lowerQ)
+              );
+            }}
+            labelFn={(entry) => (
+              <>
+                <span className="mr-2 text-muted-foreground">{entry.type}</span>
+                {entry.title}
+              </>
+            )}
+            getItemId={(entry) => entry.id}
+            isItemFiltered={(entry, existingSet, role) => {
+              const roleKey = (role ?? "").trim();
+              return existingSet.has(`${entry.id}::${roleKey}`);
+            }}
+            onAddFn={(entryId, role) => addEntryToPerson(personId, entryId, role ?? "autor")}
+            existing={p.entries.map(e => `${e.id}::${(e.role ?? "").trim()}`)}
+            disabled={q.isLoading}
+          />
+        }
+        isEmpty={p.entries.length === 0}
+        emptyMessage="No entries"
+        error={removeEntryMut.isError ? "Failed to remove entry." : undefined}
+      >
+        <div className="space-y-2 text-sm">
           {p.entries.map((e, idx) => (
             <div key={`${e.id}::${e.role ?? ""}::${idx}`} className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -234,27 +288,25 @@ export function PersonDetailPage() {
                   Remove
                 </Button>
 
-
                 <div className="font-mono text-xs text-muted-foreground">
                   {e.id.slice(0, 8)}…
                 </div>
               </div>
             </div>
           ))}
-          {removeEntryMut.isError ? <div className="text-sm text-red-600">Nepodařilo se odebrat entry.</div> : null}
-        </CardContent>
-      </Card>
+        </div>
+      </RelationshipCard>
 
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Relations</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm">
+      <RelationshipCard
+        title="Relations"
+        action={<Button size="sm" disabled>Add relation</Button>}
+        isEmpty={false}
+      >
+        <div className="space-y-4 text-sm">
           <div className="space-y-2">
             <div className="font-medium">Outgoing</div>
             {p.relationsOut.length === 0 && (
-              <div className="text-muted-foreground">Žádné</div>
+              <div className="text-muted-foreground">None</div>
             )}
             {p.relationsOut.map((r) => (
               <div key={r.id} className="flex items-start justify-between gap-4">
@@ -280,7 +332,7 @@ export function PersonDetailPage() {
           <div className="space-y-2">
             <div className="font-medium">Incoming</div>
             {p.relationsIn.length === 0 && (
-              <div className="text-muted-foreground">Žádné</div>
+              <div className="text-muted-foreground">None</div>
             )}
             {p.relationsIn.map((r) => (
               <div key={r.id} className="flex items-start justify-between gap-4">
@@ -300,52 +352,53 @@ export function PersonDetailPage() {
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-      {/* Inline edit form */}
-      {editMode ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Edit</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PersonForm
-              value={formValue}
-              onChange={setFormValue}
-              onSubmit={() => updateMut.mutate()}
-              submitLabel={updateMut.isPending ? "Saving…" : "Save"}
-              disabled={updateMut.isPending}
-              errorText={updateMut.isError ? "Nepodařilo se uložit." : null}
-            />
-          </CardContent>
-        </Card>
-      ) : null}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Smazat položku</DialogTitle>
-            <DialogDescription>
-              {confirmTarget?.type === "tag"
-                ? `Opravdu odebrat tag '${confirmTarget.label}'?`
-                : confirmTarget?.type === "entry"
-                ? `Opravdu odebrat entry '${confirmTarget.label}'?`
-                : "Opravdu provést akci?"}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
-              Zrušit
-            </Button>
-            <Button
-              onClick={() => performConfirm()}
-              disabled={removeTagMut.isPending || removeEntryMut.isPending}
-            >
-              Smazat
-            </Button>
-          </DialogFooter>
-          <DialogClose />
-        </DialogContent>
-      </Dialog>
-    </div>
+        </div>
+      </RelationshipCard>
+    </>
+  ) : null;
+
+  return (
+    <>
+      <DetailPageLayout
+        isLoading={q.isLoading}
+        isError={q.isError}
+        errorMessage="This person may have been deleted or is no longer available."
+        title={getPersonDisplayName(p || {})}
+        subtitle={p?.id}
+        backLink="/persons"
+        backLabel="Back"
+        isEditing={editMode}
+        onEditChange={setEditMode}
+        onSave={() => updateMut.mutate()}
+        isSavePending={updateMut.isPending}
+        saveError={updateMut.isError ? "Failed to save." : undefined}
+        viewContent={viewContent}
+        editContent={editContent}
+        relationshipContent={relationshipContent}
+        onDelete={() => deleteMut.mutate()}
+        isDeletingPending={deleteMut.isPending}
+        deleteConfirmOpen={deleteConfirmOpen}
+        onDeleteConfirmOpenChange={setDeleteConfirmOpen}
+        deleteConfirmTitle="Delete person"
+        deleteConfirmDescription={<>Are you sure you want to delete person '{getPersonDisplayName(p || {})}'? This action cannot be undone.</>}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Remove item"
+        description={
+          confirmTarget?.type === "tag"
+            ? `Remove tag '${confirmTarget.label}'?`
+            : confirmTarget?.type === "entry"
+            ? `Remove entry '${confirmTarget.label}'?`
+            : "Are you sure?"
+        }
+        confirmLabel="Remove"
+        confirmVariant="destructive"
+        isConfirming={removeTagMut.isPending || removeEntryMut.isPending}
+        onConfirm={() => performConfirm()}
+      />
+    </>
   );
 }

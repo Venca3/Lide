@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-001-entry-tag-unique-active-only
+      author: vasa
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              ALTER TABLE entry_tag DROP CONSTRAINT IF EXISTS uq_entry_tag_entry_tag;
+              DROP INDEX IF EXISTS uq_entry_tag_entry_tag_active;
+              CREATE UNIQUE INDEX uq_entry_tag_entry_tag_active
+                ON entry_tag (entry_id, tag_id)
+                WHERE deleted_at IS NULL;
+
+  - changeSet:
+      id: 004-002-person-tag-unique-active-only
+      author: vasa
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              ALTER TABLE person_tag DROP CONSTRAINT IF EXISTS uq_person_tag_person_tag;
+              DROP INDEX IF EXISTS uq_person_tag_person_tag_active;
+              CREATE UNIQUE INDEX uq_person_tag_person_tag_active
+                ON person_tag (person_id, tag_id)
+                WHERE deleted_at IS NULL;
+
+  - changeSet:
+      id: 004-003-person-entry-unique-active-only
+      author: vasa
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              ALTER TABLE person_entry DROP CONSTRAINT IF EXISTS uq_person_entry_person_entry_role;
+              DROP INDEX IF EXISTS uq_person_entry_person_entry_role_active;
+              CREATE UNIQUE INDEX uq_person_entry_person_entry_role_active
+                ON person_entry (person_id, entry_id, role)
+                WHERE deleted_at IS NULL;
+
+  - changeSet:
+      id: 004-004-media-entry-unique-active-only
+      author: vasa
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              ALTER TABLE media_entry DROP CONSTRAINT IF EXISTS uq_media_entry_media_entry;
+              DROP INDEX IF EXISTS uq_media_entry_media_entry_active;
+              CREATE UNIQUE INDEX uq_media_entry_media_entry_active
+                ON media_entry (media_id, entry_id)
+                WHERE deleted_at IS NULL;
+
+  - changeSet:
+      id: 004-005-person-relation-unique-active-only
+      author: vasa
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DROP INDEX IF EXISTS uq_person_relation_from_to_type_active;
+              CREATE UNIQUE INDEX uq_person_relation_from_to_type_active
+                ON person_relation (from_person_id, to_person_id, type)
+                WHERE deleted_at IS NULL;

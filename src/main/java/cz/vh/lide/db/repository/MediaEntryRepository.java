@@ -29,16 +29,34 @@ public interface MediaEntryRepository extends JpaRepository<MediaEntry, UUID>, J
   Optional<MediaEntry> findByEntryIdAndMediaId(@NonNull UUID entryId, @NonNull UUID mediaId);
 
   /**
+   * Find non-deleted MediaEntry by Media id and Entry id.
+   */
+  @NonNull
+  Optional<MediaEntry> findByEntryIdAndMediaIdAndDeletedAtIsNull(@NonNull UUID entryId, @NonNull UUID mediaId);
+
+  /**
    * Find all MediaEntries by Media id.
    */
   @NonNull
   Page<MediaEntry> findByMediaId(@NonNull UUID mediaId, @NonNull Pageable pageable);
 
   /**
+   * Find all non-deleted MediaEntries by Media id.
+   */
+  @NonNull
+  Page<MediaEntry> findByMediaIdAndDeletedAtIsNull(@NonNull UUID mediaId, @NonNull Pageable pageable);
+
+  /**
    * Find all MediaEntries by Entry id.
    */
   @NonNull
   Page<MediaEntry> findByEntryId(@NonNull UUID entryId, @NonNull Pageable pageable);
+
+  /**
+   * Find all non-deleted MediaEntries by Entry id.
+   */
+  @NonNull
+  Page<MediaEntry> findByEntryIdAndDeletedAtIsNull(@NonNull UUID entryId, @NonNull Pageable pageable);
 
   /**
    * Pagable find all MediaEntries not marked as deleted.

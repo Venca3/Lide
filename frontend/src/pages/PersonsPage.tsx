@@ -1,20 +1,19 @@
-import { Link } from "react-router-dom";
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { PagedListCard } from "@/components/layout/PagedListCard";
+import { Button } from "@/components/ui/button";
+import { ListRow } from "@/components/layout/ListRow";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
-import { listPersonsPaged, type PagedResult, type PersonDto } from "@/api/persons";
+import { deletePerson, listPersonsPaged, type PagedResult, type PersonDto } from "@/api/persons";
 
 export function PersonsPage() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState("");
-
-  useMemo(() => {
-    const t = setTimeout(() => setDebouncedQ(q), 300);
-    return () => clearTimeout(t);
-  }, [q]);
+  const debouncedQ = useDebouncedValue(q, 300);
 
   const [page, setPage] = useState(0);
   const [size] = useState(20);
@@ -24,74 +23,86 @@ export function PersonsPage() {
     queryFn: () => listPersonsPaged(debouncedQ, page, size),
   });
 
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deletePerson(id),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["persons"] });
+    },
+  });
+
   const items = personsQuery.data?.items ?? [];
   const total = personsQuery.data?.total ?? 0;
 
-  const display = (p: PersonDto) =>
-    p.nickname ?? ([p.firstName, p.lastName].filter(Boolean).join(" ") || "Person");
+  const display = (p: PersonDto) => {
+    const fullName = [p.firstName, p.lastName].filter(Boolean).join(" ").trim();
+    const nickname = p.nickname?.trim();
+    if (fullName && nickname) return `${fullName} (${nickname})`;
+    if (fullName) return fullName;
+    if (nickname) return nickname;
+    return "Unnamed";
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold">Persons</h1>
-      </div>
+      <PagedListCard
+        pageTitle="Persons"
+        pageAction={
+          <Button asChild>
+            <Link to="/persons/new">New person</Link>
+          </Button>
+        }
+        filter={q}
+        onFilterChange={setQ}
+        searchPlaceholder="Search..."
+        isLoading={personsQuery.isLoading}
+        isError={personsQuery.isError}
+        errorText="Error loading persons."
+        itemsLength={items.length}
+        total={total}
+        page={page}
+        size={size}
+        onPageChange={setPage}
+        showPagination={Boolean(personsQuery.data)}
+      >
+        {items.map((p) => {
+          const birthYear = p.birthDate ? new Date(p.birthDate).getFullYear() : null;
+          const details = [
+            p.phone && `Phone: ${p.phone}`,
+            p.email && `Email: ${p.email}`,
+            birthYear && `Born: ${birthYear}`,
+          ]
+            .filter(Boolean)
+            .join(" • ");
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Search</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input
-            placeholder="Hledej (q)..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-
-          {personsQuery.isLoading && <div>Načítám…</div>}
-          {personsQuery.isError && (
-            <div className="text-sm text-red-600">
-              Chyba při načítání persons.
-            </div>
-          )}
-
-          {personsQuery.data && (
-            <div className="space-y-2">
-              {items.map((p) => (
-                <div key={p.id} className="flex items-center justify-between">
-                  <div>{display(p)}</div>
-                  <Link className="text-sm underline" to={`/persons/${p.id}`}>
-                    Detail
-                  </Link>
-                </div>
-              ))}
-              {items.length === 0 && (
-                <div className="text-sm text-muted-foreground">Nic nenalezeno</div>
+          return (
+            <ListRow
+              key={p.id}
+              hoverHint="View details"
+              onClick={() => {
+                navigate(`/persons/${p.id}`);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  navigate(`/persons/${p.id}`);
+                }
+              }}
+              deleteAction={{
+                label: display(p),
+                onDelete: () => deleteMut.mutate(p.id),
+                isDeleting: deleteMut.isPending,
+                confirmTitle: "Delete person",
+                confirmDescription: <>Are you sure you want to delete person '{display(p)}'?</>,
+              }}
+            >
+              <div className="font-medium group-hover:underline">{display(p)}</div>
+              {details && (
+                <div className="text-xs text-muted-foreground">{details}</div>
               )}
-
-              <div className="flex items-center justify-between pt-2">
-                <div className="text-sm">Celkem: {total}</div>
-                <div className="space-x-2">
-                  <button
-                    className="btn"
-                    onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                  >
-                    Prev
-                  </button>
-                  <span className="text-sm">Stránka {page + 1}</span>
-                  <button
-                    className="btn"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={(page + 1) * size >= total}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </ListRow>
+          );
+        })}
+      </PagedListCard>
     </div>
   );
 }
