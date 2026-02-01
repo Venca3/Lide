@@ -211,7 +211,25 @@ Constraints (typicky):
 #### `cz.vh.lide.LideAppApplication`
 - hlavní Spring Boot entrypoint
 
-#### `cz.vh.lide.domain` (JPA entity)
+#### `cz.vh.lide.core.service` (aplikační služby)
+- `EntryService.java`
+- `EntryTagService.java`
+- `MediaService.java`
+- `MediaEntryService.java`
+- `PersonService.java`
+- `PersonEntryService.java`
+- `PersonRelationService.java`
+- `PersonTagService.java`
+- `TagService.java`
+
+#### `cz.vh.lide.core.exception`
+- `FatalException.java`
+
+#### `cz.vh.lide.core.tools`
+- `JpaTools.java`
+
+#### `cz.vh.lide.db.entity` (JPA entity)
+- `BaseEntity.java`
 - `Entry.java`
 - `EntryTag.java`
 - `Media.java`
@@ -222,7 +240,19 @@ Constraints (typicky):
 - `PersonTag.java`
 - `Tag.java`
 
-#### `cz.vh.lide.repo` (Spring Data repositories)
+#### `cz.vh.lide.db.dto` (DB DTOs)
+- `BaseDto.java`
+- `EntryDto.java`
+- `EntryTagDto.java`
+- `MediaDto.java`
+- `MediaEntryDto.java`
+- `PersonDto.java`
+- `PersonEntryDto.java`
+- `PersonRelationDto.java`
+- `PersonTagDto.java`
+- `TagDto.java`
+
+#### `cz.vh.lide.db.repository` (Spring Data repositories)
 - `EntryRepository.java`
 - `EntryTagRepository.java`
 - `MediaRepository.java`
@@ -230,51 +260,74 @@ Constraints (typicky):
 - `PersonRepository.java`
 - `PersonTagRepository.java`
 - `PersonEntryRepository.java`
-- `PersonRelationRepository.java`
+- `PersonRelationsRepository.java`
 - `TagRepository.java`
 
-#### `cz.vh.lide.repo.crud` (CRUD ports + legacy adapters)
-- `*CrudStore.java` (write-side port; create/update/softDelete/getByUUID)
-- `Legacy*CrudStore.java` (adapter delegující na `cz.vh.lide.repo.*Repository`)
+#### `cz.vh.lide.db.filter`
+- `EntryFilter.java`
+- `EntryTagFilter.java`
+- `MediaFilter.java`
+- `MediaEntryFilter.java`
+- `PersonFilter.java`
+- `PersonEntryFilter.java`
+- `PersonRelationFilter.java`
+- `PersonTagFilter.java`
+- `TagFilter.java`
 
-#### `cz.vh.lide.repo.view` (View/read ports + legacy adapters)
-- `*ViewStore.java` (read-side port; list/get + další read dotazy)
-- `Legacy*ViewStore.java` (adapter delegující na `cz.vh.lide.repo.*Repository`)
+#### `cz.vh.lide.db.specification`
+- `EntrySpecifications.java`
+- `EntryTagSpecifications.java`
+- `MediaSpecifications.java`
+- `MediaEntrySpecifications.java`
+- `PersonSpecifications.java`
+- `PersonEntrySpecifications.java`
+- `PersonRelationSpecifications.java`
+- `PersonTagSpecifications.java`
+- `TagSpecifications.java`
 
-#### `cz.vh.lide.repo.projection` (projekce pro read)
-- interface-based projekce pro Spring Data (bez vlastních Spring beanů)
+#### `cz.vh.lide.db.mapper`
+- `DbMapper.java`
 
-#### `cz.vh.lide.api.dto` (DTOs)
-- `EntryDtos.java`
-- `EntryDetailDtos.java`
-- `MediaDtos.java`
-- `MediaEntryDtos.java`
-- `PersonDtos.java`
-- `PersonDetailDtos.java`
-- `PersonEntryDtos.java`
-- `PersonRelationDtos.java`
-- `TagDtos.java`
+#### `cz.vh.lide.db.validator`
+- `dbValidator.java`
 
-#### `cz.vh.lide.api` (REST controllers + handler)
-- `ApiExceptionHandler.java`
+#### `cz.vh.lide.db.exception`
+- `FatalDbException.java`
+
+#### `cz.vh.lide.ws.controller` (REST controllers)
 - `HealthController.java`
-
-CRUD:
 - `PersonController.java`
 - `TagController.java`
 - `EntryController.java`
 - `MediaController.java`
-
-Vazby:
 - `PersonTagController.java`
 - `EntryTagController.java`
 - `PersonEntryController.java`
 - `MediaEntryController.java`
 - `PersonRelationController.java`
+- `PersonReadController.java`
+- `EntryReadController.java`
 
-Read agregace (čtení “včetně vazeb”):
-- `PersonReadController.java` *(person + tags + entries + relations)*
-- `EntryReadController.java` *(entry + tags + persons + media)*
+#### `cz.vh.lide.ws.dto` (API DTOs)
+- `BindingDtos.java`
+- `EntryDtos.java`
+- `EntryDetailDtos.java`
+- `MediaDtos.java`
+- `MediaEntryDtos.java`
+- `PersonDtos.java`
+- `PersonEntryDtos.java`
+- `PersonReadDtos.java`
+- `PersonRelationDtos.java`
+- `TagDtos.java`
+
+#### `cz.vh.lide.ws.mapper`
+- `WsMapper.java`
+
+#### `cz.vh.lide.ws.handler`
+- `ApiExceptionHandler.java`
+
+#### `cz.vh.lide.ws.config`
+- `CorsConfig.java`
 
 ### Liquibase (resources)
 `src/main/resources/`
@@ -316,10 +369,10 @@ CRUD:
 
 Vazby:
 - `/api/personstags/...` *(person ↔ tag)*
-- `/api/entrytags/...` *(entry ↔ tag)*
-- `/api/personentries/...` *(person ↔ entry + role)*
-- `/api/mediaentries/...` *(media ↔ entry)*
-- `/api/personrelations/...` *(person ↔ person relation)*
+- `/api/entriestags/...` *(entry ↔ tag)*
+- `/api/personentry/...` *(person ↔ entry + role)*
+- `/api/mediaentry/...` *(media ↔ entry)*
+- `/api/personrelation/...` *(person ↔ person relation)*
 
 Read agregace:
 - `GET /api/personread/{personId}`

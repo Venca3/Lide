@@ -26,13 +26,17 @@ Lide is a personal database application for managing people, their relationships
 #### Java Package Structure
 ```
 cz.vh.lide/
-├── domain/          # JPA entities
-├── repo/            # Legacy Spring Data repositories (JpaRepository)
-├── repo/crud/       # CRUD ports + legacy adapters (write-side)
-├── repo/view/       # View/read ports + legacy adapters (read-side)
-├── repo/projection/ # Read projections (no Spring beans)
-├── api/dto/         # Data Transfer Objects
-└── api/             # REST controllers
+├── core/service     # Application services
+├── core/tools       # Shared service utilities
+├── core/exception   # Core exceptions
+├── db/entity        # JPA entities
+├── db/dto           # DB-layer DTOs
+├── db/repository    # Spring Data repositories
+├── db/filter        # Filter DTOs
+├── db/specification # JPA Specifications
+├── db/mapper        # DB mappers
+├── db/validator     # Validation helpers
+└── ws/controller    # REST controllers (+ ws/dto, ws/mapper, ws/handler, ws/config)
 ```
 
 #### Naming Conventions
@@ -135,11 +139,38 @@ cz.vh.lide/
 
 ## Common Patterns
 
-### Repository Layering (Legacy vs new Stores)
-- `cz.vh.lide.repo.*Repository` stays as **legacy Spring Data** repositories.
-- New code should depend on `cz.vh.lide.repo.crud.*CrudStore` (write) and `cz.vh.lide.repo.view.*ViewStore` (read).
-- Reason: we can introduce better separation (CRUD vs view) without moving existing code; migration can be done incrementally later.
-- Avoid creating a second `JpaRepository` interface for the same entity (it can cause bean name collisions / ambiguous wiring).
+### AI Navigation Rule (Context First)
+- When working on a class, first look for a README.md in the same package/folder.
+- Read that README summary before opening the class source file.
+- Only open the class file if the README summary is insufficient for the task.
+
+### Documentation Sync Rule
+- If you change any class, update the README.md in the same folder as that class.
+
+Package summaries:
+- [src/main/java/cz/vh/lide/core/service/README.md](src/main/java/cz/vh/lide/core/service/README.md)
+- [src/main/java/cz/vh/lide/db/repository/README.md](src/main/java/cz/vh/lide/db/repository/README.md)
+- [src/main/java/cz/vh/lide/ws/controller/README.md](src/main/java/cz/vh/lide/ws/controller/README.md)
+
+Extended package summaries:
+- [src/main/java/cz/vh/lide/core/exception/README.md](src/main/java/cz/vh/lide/core/exception/README.md)
+- [src/main/java/cz/vh/lide/core/tools/README.md](src/main/java/cz/vh/lide/core/tools/README.md)
+- [src/main/java/cz/vh/lide/db/dto/README.md](src/main/java/cz/vh/lide/db/dto/README.md)
+- [src/main/java/cz/vh/lide/db/entity/README.md](src/main/java/cz/vh/lide/db/entity/README.md)
+- [src/main/java/cz/vh/lide/db/exception/README.md](src/main/java/cz/vh/lide/db/exception/README.md)
+- [src/main/java/cz/vh/lide/db/filter/README.md](src/main/java/cz/vh/lide/db/filter/README.md)
+- [src/main/java/cz/vh/lide/db/mapper/README.md](src/main/java/cz/vh/lide/db/mapper/README.md)
+- [src/main/java/cz/vh/lide/db/specification/README.md](src/main/java/cz/vh/lide/db/specification/README.md)
+- [src/main/java/cz/vh/lide/db/validator/README.md](src/main/java/cz/vh/lide/db/validator/README.md)
+- [src/main/java/cz/vh/lide/ws/config/README.md](src/main/java/cz/vh/lide/ws/config/README.md)
+- [src/main/java/cz/vh/lide/ws/dto/README.md](src/main/java/cz/vh/lide/ws/dto/README.md)
+- [src/main/java/cz/vh/lide/ws/handler/README.md](src/main/java/cz/vh/lide/ws/handler/README.md)
+- [src/main/java/cz/vh/lide/ws/mapper/README.md](src/main/java/cz/vh/lide/ws/mapper/README.md)
+
+### Repository Layering (Current)
+- `cz.vh.lide.db.repository.*Repository` are the primary Spring Data repositories.
+- Core services depend directly on these repositories.
+- Avoid creating duplicate `JpaRepository` interfaces for the same entity (can cause bean name collisions / ambiguous wiring).
 
 ### Repository Queries
 Always filter soft deleted records:
