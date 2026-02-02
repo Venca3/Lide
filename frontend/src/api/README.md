@@ -7,6 +7,7 @@ Tato složka obsahuje TypeScript API klienty pro komunikaci s backend REST API. 
 ```
 api/
 ├── http.ts              # Základní HTTP utility
+│                        # (šetří 204/empty body – vrací undefined)
 │
 ├── entries.ts           # Entry CRUD + paginace
 ├── persons.ts           # Person CRUD + paginace

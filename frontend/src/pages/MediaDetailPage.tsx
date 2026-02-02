@@ -105,6 +105,7 @@ export function MediaDetailPage() {
     mutationFn: (entryId: string) => addMediaToEntry(entryId, mediaId),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["media", mediaId] });
+      await qc.invalidateQueries({ queryKey: ["mediaentry", "entries-for-media", mediaId] });
     },
   });
 
@@ -113,6 +114,7 @@ export function MediaDetailPage() {
       updateMediaEntryLink(entryId, mediaId, { caption, sortOrder }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["media", mediaId] });
+      await qc.invalidateQueries({ queryKey: ["mediaentry", "entries-for-media", mediaId] });
       setEditEntryLinkOpen(false);
       setEditEntryLinkTarget(null);
     },
@@ -122,6 +124,7 @@ export function MediaDetailPage() {
     mutationFn: (entryId: string) => removeMediaFromEntry(entryId, mediaId),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["media", mediaId] });
+      await qc.invalidateQueries({ queryKey: ["mediaentry", "entries-for-media", mediaId] });
       setEntryConfirmOpen(false);
       setEntryConfirmTarget(null);
     },

@@ -9,15 +9,14 @@ export function addEntryToPerson(personId: string, entryId: string, role: string
 }
 
 export function updateEntryRole(personId: string, entryId: string, oldRole: string, newRole: string) {
-  const oldR = normalizeString(oldRole);
   const newR = normalizeString(newRole) || "autor";
 
-  if (!oldR) {
+  if (!oldRole) {
     return Promise.reject(new Error("Old role is required to update a person-entry link."));
   }
 
   return apiPut(
-    `/api/personentry/person/${personId}/entries/${entryId}?oldRole=${encodeURIComponent(oldR)}&newRole=${encodeURIComponent(newR)}`
+    `/api/personentry/person/${personId}/entries/${entryId}?oldRole=${encodeURIComponent(oldRole)}&newRole=${encodeURIComponent(newR)}`
   );
 }
 
