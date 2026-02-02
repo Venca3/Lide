@@ -12,4 +12,3 @@ databaseChangeLog:
       file: db/changelog/002-person-entry-role-not-null.yaml
       file: db/changelog/003-add-updated-at.yaml
       file: db/changelog/004-relation-unique-soft-delete.yaml
-      file: db/changelog/005-test-data.yaml
