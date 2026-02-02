@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/layout/ConfirmDialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = {
   // Loading & Error states
@@ -37,6 +38,11 @@ type Props = {
   editContent?: ReactNode; // Zobrazeno v edit mode
   relationshipContent?: ReactNode; // Vztahy (zobrazeno vždycky)
 
+  // Optional wrappers
+  viewCard?: boolean;
+  editCard?: boolean;
+  editTitle?: ReactNode;
+
   children?: ReactNode; // Pro zpětnou kompatibilitu
 };
 
@@ -62,6 +68,9 @@ export function DetailPageLayout({
   viewContent,
   editContent,
   relationshipContent,
+  viewCard,
+  editCard,
+  editTitle,
   children,
 }: Props) {
   if (isLoading) return <div>Loading details…</div>;
@@ -124,10 +133,35 @@ export function DetailPageLayout({
       </div>
 
       {/* View content - zobrazeno když není v edit mode */}
-      {!isEditing && viewContent && <div>{viewContent}</div>}
+      {!isEditing && viewContent && (
+        <div>
+          {viewCard ? (
+            <Card>
+              <CardContent className="space-y-4 pt-6">{viewContent}</CardContent>
+            </Card>
+          ) : (
+            viewContent
+          )}
+        </div>
+      )}
 
       {/* Edit content - zobrazeno když je v edit mode */}
-      {isEditing && editContent && <div>{editContent}</div>}
+      {isEditing && editContent && (
+        <div>
+          {editCard ? (
+            <Card>
+              {editTitle && (
+                <CardHeader>
+                  <CardTitle>{editTitle}</CardTitle>
+                </CardHeader>
+              )}
+              <CardContent>{editContent}</CardContent>
+            </Card>
+          ) : (
+            editContent
+          )}
+        </div>
+      )}
 
       {/* Fallback na children pro zpětnou kompatibilitu */}
       {!isEditing && !viewContent && children && <div>{children}</div>}

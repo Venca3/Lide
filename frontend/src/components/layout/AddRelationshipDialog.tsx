@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { DialogDescription } from "@/components/ui/dialog";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
-interface AddRelationshipDialogProps<T> {
+export interface AddRelationshipDialogProps<T> {
   invalidateQueryKey: string[];
-  title: string;
-  buttonLabel: string;
+  title?: string;
+  buttonLabel?: string;
   placeholder?: string;
+  resourceLabel?: string;
+  resourceLabelPlural?: string;
   extraField?: {
     label: string;
     placeholder?: string;
@@ -33,7 +35,9 @@ export function AddRelationshipDialog<T>({
   invalidateQueryKey,
   title,
   buttonLabel,
-  placeholder = "Search…",
+  placeholder,
+  resourceLabel,
+  resourceLabelPlural,
   extraField,
   queryKey,
   queryFn,
@@ -51,6 +55,11 @@ export function AddRelationshipDialog<T>({
   const [q, setQ] = useState("");
   const [extraValue, setExtraValue] = useState(extraField?.defaultValue ?? "");
   const debouncedQ = useDebouncedValue(q, 250);
+
+  const derivedPlural = resourceLabelPlural ?? (resourceLabel ? `${resourceLabel}s` : undefined);
+  const derivedTitle = title ?? (resourceLabel ? `Add ${resourceLabel}` : "Add item");
+  const derivedButtonLabel = buttonLabel ?? derivedTitle;
+  const derivedPlaceholder = placeholder ?? (derivedPlural ? `Search ${derivedPlural.toLowerCase()}…` : "Search…");
 
   const dataQuery = useQuery({
     queryKey: [...queryKey, debouncedQ],
@@ -79,15 +88,15 @@ export function AddRelationshipDialog<T>({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" disabled={disabled}>
-          {buttonLabel}
+          {derivedButtonLabel}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="bg-background text-foreground">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{derivedTitle}</DialogTitle>
           <DialogDescription className="sr-only">
-            {title}
+            {derivedTitle}
           </DialogDescription>
         </DialogHeader>
 
@@ -101,7 +110,7 @@ export function AddRelationshipDialog<T>({
           )}
 
           <Input
-            placeholder={placeholder}
+            placeholder={derivedPlaceholder}
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
