@@ -9,18 +9,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { UI_LABELS } from "@/lib/constants";
 
 type ConfirmDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: ReactNode;
   description?: ReactNode;
+  children?: ReactNode;
   confirmLabel?: string;
   confirmLoadingLabel?: string;
   cancelLabel?: string;
   confirmVariant?: "default" | "destructive" | "outline" | "ghost" | "secondary";
   isConfirming?: boolean;
-  onConfirm: () => void;
+  onConfirm: () => boolean | void;
 };
 
 export function ConfirmDialog({
@@ -28,9 +30,10 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = "Confirm",
+  children,
+  confirmLabel = UI_LABELS.CONFIRM,
   confirmLoadingLabel,
-  cancelLabel = "Cancel",
+  cancelLabel = UI_LABELS.CANCEL,
   confirmVariant = "default",
   isConfirming,
   onConfirm,
@@ -46,6 +49,7 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
+        {children}
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             {cancelLabel}
@@ -53,8 +57,10 @@ export function ConfirmDialog({
           <Button
             variant={confirmVariant}
             onClick={() => {
-              onConfirm();
-              onOpenChange(false);
+              const shouldClose = onConfirm() ?? true;
+              if (shouldClose) {
+                onOpenChange(false);
+              }
             }}
             disabled={isConfirming}
           >

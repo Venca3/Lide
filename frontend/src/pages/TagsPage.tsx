@@ -15,7 +15,7 @@ import { ListRow } from "@/components/layout/ListRow";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { createTag, deleteTag, listTagsPaged, updateTag, type PagedResult, type TagDto } from "@/api/tags";
-import { TagForm, type TagFormValue } from "@/featured/tags/TagForm";
+import { TagForm, type TagFormValue } from "@/features/tags/TagForm";
 
 const emptyTag: TagFormValue = {
   name: "",

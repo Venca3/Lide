@@ -12,7 +12,7 @@ import { PersonRelationships } from "@/components/features/PersonRelationships";
 import { getPersonDisplayName } from "@/lib/person";
 import { ENTITIES, UI_LABELS, ROUTES } from "@/lib/constants";
 
-export function PersonDetailPage() {
+export function TestDetailPage() {
   const { id } = useParams();
   const personId = id ?? "";
   const nav = useNavigate();
@@ -115,7 +115,7 @@ export function PersonDetailPage() {
       submitLabel={UI_LABELS.SAVE}
       disabled={updateMut.isPending}
       errorText={updateMut.isError ? `${UI_LABELS.ERROR_UPDATING} ${ENTITIES.PERSON.singular.toLowerCase()}` : null}
-      showSubmitButton={false}
+      showSubmitButton={false }
     />
   ) : null;
 

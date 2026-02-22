@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPostJson, apiPutJson } from "./http";
+import { API_ENDPOINTS } from "@/lib/constants";
 
 export type EntryDto = {
   id: string;
@@ -44,7 +45,7 @@ export type EntryUpdate = {
 };
 
 export function listEntries() {
-  return apiGet<EntryDto[]>("/api/entries");
+  return apiGet<EntryDto[]>(API_ENDPOINTS.ENTRIES);
 }
 
 export type PagedResult<T> = { items: T[]; total: number; link?: string };
@@ -54,7 +55,7 @@ export async function listEntriesPaged(q?: string, page = 0, size = 20): Promise
   if (q) params.set("q", q);
   params.set("page", String(page));
   params.set("size", String(size));
-  const url = `/api/entries?${params.toString()}`;
+  const url = `${API_ENDPOINTS.ENTRIES}?${params.toString()}`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) {
     throw new Error(`GET ${url} failed: ${res.status}`);
@@ -66,17 +67,17 @@ export async function listEntriesPaged(q?: string, page = 0, size = 20): Promise
 }
 
 export function getEntry(id: string) {
-  return apiGet<EntryDto>(`/api/entries/${id}`);
+  return apiGet<EntryDto>(`${API_ENDPOINTS.ENTRIES}/${id}`);
 }
 
 export function createEntry(body: EntryCreate) {
-  return apiPostJson<EntryDto>("/api/entries", body);
+  return apiPostJson<EntryDto>(API_ENDPOINTS.ENTRIES, body);
 }
 
 export function updateEntry(id: string, body: EntryUpdate) {
-  return apiPutJson<EntryDto>(`/api/entries/${id}`, body);
+  return apiPutJson<EntryDto>(`${API_ENDPOINTS.ENTRIES}/${id}`, body);
 }
 
 export function deleteEntry(id: string) {
-  return apiDelete(`/api/entries/${id}`);
+  return apiDelete(`${API_ENDPOINTS.ENTRIES}/${id}`);
 }

@@ -3,42 +3,29 @@ import type { PagedResult, EntryDto } from "../api/entries";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
-
-import { createEntry, deleteEntry, listEntriesPaged } from "../api/entries";
-import { PagedListCard } from "@/components/layout/PagedListCard";
-import { ListRow } from "@/components/layout/ListRow";
+import { deleteEntry, listEntriesPaged, createEntry } from "../api/entries";
+import { PagedListCard_new } from "@/components/layout/PagedListCard_new";
 import { formatDateTime } from "@/lib/dateFormat";
-import { datetimeLocalToIso } from "@/lib/datetimeLocalConvert";
+import { ENTITIES, ROUTES, UI_LABELS } from "@/lib/constants";
+import { ListRow_new } from "@/components/layout/ListRow_new";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
-import { EntryForm, type EntryFormValue } from "@/featured/entries/EntryForm";
-
-const empty: EntryFormValue = {
-  type: "MEMORY",
-  title: "",
-  content: "",
-  occurredAt: "",
-};
+import type { EntryFormValue } from "@/lib/types";
+import { EntryForm_new } from "@/features/entries/EntryForm_new";
 
 export function EntriesPage() {
-  const qc = useQueryClient();
-  const navigate = useNavigate();
-
   const [filter, setFilter] = useState("");
-  const debounced = useDebouncedValue(filter, 250);
   const [page, setPage] = useState(0);
-  const size = 20;
+  const size = 10;
+  const navigate = useNavigate();
+  const debounced = useDebouncedValue(filter, 250);
+  const qc = useQueryClient();
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [v, setV] = useState<EntryFormValue>(empty);
+  const [createForm, setCreateForm] = useState<EntryFormValue>({
+    type: "",
+    title: "",
+    content: "",
+    occurredAt: "",
+  });
 
   // reset page to 0 when debounced filter changes
   useEffect(() => {
@@ -50,28 +37,6 @@ export function EntriesPage() {
     queryFn: () => listEntriesPaged(debounced, page, size),
   });
 
-  const createMut = useMutation({
-    mutationFn: () => {
-      const trimmedOccurredAt = v.occurredAt.trim();
-      const isoDate = datetimeLocalToIso(trimmedOccurredAt);
-
-      return createEntry({
-        type: v.type.trim(),
-        title: v.title.trim() || null,
-        content: v.content.trim(),
-        occurredAt: isoDate,
-        entryTags: [],
-        personEntries: [],
-        mediaEntries: [],
-      });
-    },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["entries"] });
-      setCreateOpen(false);
-      setV(empty);
-    },
-  });
-
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteEntry(id),
     onSuccess: async () => {
@@ -79,97 +44,77 @@ export function EntriesPage() {
     },
   });
 
+  const createMut = useMutation({
+    mutationFn: (data: { type: string; title?: string; content: string; occurredAt?: string }) =>
+      createEntry({
+        type: data.type,
+        title: data.title || null,
+        content: data.content,
+        occurredAt: data.occurredAt || null,
+        entryTags: [],
+        personEntries: [],
+        mediaEntries: [],
+      }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["entries"] });
+      setCreateForm({ type: "", title: "", content: "", occurredAt: "" });
+    },
+  });
+
+  const handleCreateSubmit = () => {
+    createMut.mutate(createForm);
+  };
+
+  const createFormContent = (
+    <EntryForm_new
+      value={createForm}
+      onChange={setCreateForm}
+      onSubmit={handleCreateSubmit}
+      submitLabel={UI_LABELS.CREATE}
+      disabled={createMut.isPending}
+    />
+  );
+
   const data = q.data as PagedResult<EntryDto> | undefined;
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
   const filtered = items;
 
-  const isValidDateString = (str: string) => {
-    if (!str.trim()) return true; // optional
-    try {
-      new Date(str);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  const occurredAtInvalid = v.occurredAt && !isValidDateString(v.occurredAt);
-
   return (
     <div className="space-y-4">
-      <PagedListCard
-        pageTitle="Entries"
-        pageAction={
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button>New entry</Button>
-            </DialogTrigger>
-
-            <DialogContent className="bg-background text-foreground">
-              <DialogHeader>
-                <DialogTitle>Create entry</DialogTitle>
-                <DialogDescription>Add a new entry to document events and memories.</DialogDescription>
-              </DialogHeader>
-
-              <EntryForm
-                value={v}
-                onChange={setV}
-                onSubmit={() => createMut.mutate()}
-                submitLabel={createMut.isPending ? "Creating…" : "Create"}
-                disabled={createMut.isPending || Boolean(occurredAtInvalid)}
-                errorText={
-                  createMut.isError
-                    ? `Failed to create entry${createMut.error instanceof Error ? `: ${createMut.error.message}` : ""}`
-                    : null
-                }
-                occurredAtErrorText={occurredAtInvalid ? "Invalid date format" : null}
-              />
-            </DialogContent>
-          </Dialog>
-        }
+      <PagedListCard_new
+        resources={ENTITIES.ENTRY}
+        addDialogContent={createFormContent}
         filter={filter}
         onFilterChange={setFilter}
-        isLoading={q.isLoading}
-        isError={q.isError}
         itemsLength={filtered.length}
         total={total}
         page={page}
         size={size}
         onPageChange={setPage}
-        showPagination={Boolean(q.data)}
+        showPagination={true}
+        isLoading={q.isLoading}
+        isError={q.isError}
       >
-        {filtered.map((e: EntryDto) => (
-          <ListRow
-            key={e.id}
-            hoverHint="View details"
-            onClick={() => navigate(`/entries/${e.id}`)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                navigate(`/entries/${e.id}`);
-              }
-            }}
-            deleteAction={{
-              label: e.title || "(no title)",
-              onDelete: () => deleteMut.mutate(e.id),
-              isDeleting: deleteMut.isPending,
-              confirmTitle: "Delete entry",
-              confirmDescription: (
-                <>Are you sure you want to delete entry '{e.title || "(no title)"}'?</>
-              ),
-            }}
+        {filtered.map((entry: EntryDto) => (
+          <ListRow_new
+            resources={ENTITIES.ENTRY}
+            key={entry.id}
+            onClick={() => navigate(`${ROUTES.ENTRIES}/${entry.id}`)}
+            onDelete={() => deleteMut.mutate(entry.id)}
+            deleteTitle={entry.title || UI_LABELS.NO_TITLE}
+            isDeleting={deleteMut.isPending}
           >
             <div className="font-medium group-hover:underline">
-              {e.title || "(no title)"}
+              {entry.title || UI_LABELS.NO_TITLE}
             </div>
             <div className="text-xs text-muted-foreground">
-              {e.type}
-              {e.occurredAt ? ` • ${formatDateTime(e.occurredAt)}` : ""}
+              {entry.type}
+              {entry.occurredAt ? ` • ${formatDateTime(entry.occurredAt)}` : ""}
             </div>
-          </ListRow>
+          </ListRow_new>
         ))}
-      </PagedListCard>
+      </PagedListCard_new>
     </div>
   );
 }

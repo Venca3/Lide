@@ -1,4 +1,5 @@
 import { apiGet } from "./http";
+import { API_ENDPOINTS } from "@/lib/constants";
 import type { TagDto } from "./tags";
 
 export type PersonWithRole = {
@@ -42,5 +43,5 @@ export type EntryDetailView = {
  * Gets detailed entry view with all linked entities (tags, persons, media)
  */
 export function getEntryDetail(entryId: string) {
-  return apiGet<EntryDetailView>(`/api/entryread/${entryId}`);
+  return apiGet<EntryDetailView>(`${API_ENDPOINTS.ENTRY_READ}/${entryId}`);
 }

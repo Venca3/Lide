@@ -22,7 +22,7 @@ const empty: PersonFormValue = {
   note: "",
 };
 
-export function PersonsPage() {
+export function TestPage() {
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(0);
   const size = 20;

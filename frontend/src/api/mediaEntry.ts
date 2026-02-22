@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPostJson, apiPutJson } from "./http";
+import { API_ENDPOINTS } from "@/lib/constants";
 
 export type PagedResult<T> = { items: T[]; total: number; link?: string };
 
@@ -35,7 +36,7 @@ export type MediaEntryUpsert = {
  * Lists media linked to an entry (no pagination)
  */
 export function listMediaForEntry(entryId: string) {
-  return apiGet<MediaWithLink[]>(`/api/mediaentry/entry/${entryId}/media`);
+  return apiGet<MediaWithLink[]>(`${API_ENDPOINTS.MEDIA_ENTRIES}/entry/${entryId}/media`);
 }
 
 /**
@@ -49,7 +50,7 @@ export async function listMediaForEntryPaged(
   const params = new URLSearchParams();
   params.set("page", String(page));
   params.set("size", String(size));
-  const url = `/api/mediaentry/entry/${entryId}/media?${params.toString()}`;
+  const url = `${API_ENDPOINTS.MEDIA_ENTRIES}/entry/${entryId}/media?${params.toString()}`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) {
     throw new Error(`GET ${url} failed: ${res.status}`);
@@ -64,7 +65,7 @@ export async function listMediaForEntryPaged(
  * Lists entries linked to media (no pagination)
  */
 export function listEntriesForMedia(mediaId: string) {
-  return apiGet<EntryWithLink[]>(`/api/mediaentry/media/${mediaId}/entries`);
+  return apiGet<EntryWithLink[]>(`${API_ENDPOINTS.MEDIA_ENTRIES}/media/${mediaId}/entries`);
 }
 
 /**
@@ -78,7 +79,7 @@ export async function listEntriesForMediaPaged(
   const params = new URLSearchParams();
   params.set("page", String(page));
   params.set("size", String(size));
-  const url = `/api/mediaentry/media/${mediaId}/entries?${params.toString()}`;
+  const url = `${API_ENDPOINTS.MEDIA_ENTRIES}/media/${mediaId}/entries?${params.toString()}`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) {
     throw new Error(`GET ${url} failed: ${res.status}`);
@@ -93,19 +94,19 @@ export async function listEntriesForMediaPaged(
  * Adds media to an entry (creates or updates link)
  */
 export function addMediaToEntry(entryId: string, mediaId: string, data?: MediaEntryUpsert) {
-  return apiPostJson(`/api/mediaentry/entry/${entryId}/media/${mediaId}`, data ?? {});
+  return apiPostJson(`${API_ENDPOINTS.MEDIA_ENTRIES}/entry/${entryId}/media/${mediaId}`, data ?? {});
 }
 
 /**
  * Updates media-entry link metadata
  */
 export function updateMediaEntryLink(entryId: string, mediaId: string, data: MediaEntryUpsert) {
-  return apiPutJson(`/api/mediaentry/entry/${entryId}/media/${mediaId}`, data);
+  return apiPutJson(`${API_ENDPOINTS.MEDIA_ENTRIES}/entry/${entryId}/media/${mediaId}`, data);
 }
 
 /**
  * Removes media from an entry
  */
 export function removeMediaFromEntry(entryId: string, mediaId: string) {
-  return apiDelete(`/api/mediaentry/entry/${entryId}/media/${mediaId}`);
+  return apiDelete(`${API_ENDPOINTS.MEDIA_ENTRIES}/entry/${entryId}/media/${mediaId}`);
 }

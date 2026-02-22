@@ -3,9 +3,10 @@ export function getPersonDisplayName(p: {
   firstName?: string | null;
   lastName?: string | null;
 }) {
-  return (
-    p.nickname ||
-    [p.firstName, p.lastName].filter(Boolean).join(" ") ||
-    "Person"
-  );
+  const fullName = [p.firstName, p.lastName].filter(Boolean).join(" ").trim();
+  const nickname = p.nickname?.trim();
+  if (fullName && nickname) return `${fullName} (${nickname})`;
+  if (fullName) return fullName;
+  if (nickname) return nickname;
+  return "Unnamed";
 }
